@@ -1,0 +1,178 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'maven-publish'
+
+group = 'org'
+version = project.version
+
+java {
+  toolchain {
+    languageVersion.set(JavaLanguageVersion.of(8))
+  }
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+println "Using java version " + JavaVersion.current()
+
+sourceSets {
+    main {    	
+        java {
+            srcDirs 'src'            
+        }
+        
+        resources {
+			srcDirs= ['src']
+			exclude '**/*.java'
+		}
+		
+		output.resourcesDir = "$buildDir/classes/java/$name"
+    }
+
+    test {
+        java {
+            srcDirs 'test'
+        }
+                
+        resources {
+			srcDirs= ['test']
+			exclude '**/*.java'
+		}
+		
+		output.resourcesDir = "$buildDir/classes/java/$name"
+    }               
+}
+
+// make sure to set the compliance to Java 1.8 in the project properties if the Java version is later than 1.8
+// make sure to set Java Compiler > Errors Warnings > Deprecated and Restricted API > Forbidden reference to WARNING instead of ERROR
+dependencies {
+    implementation group: 'org', name: 'repicea', version: '[1.8.0,)'    
+    implementation 'com.cedarsoftware:json-io:4.13.0'
+
+    if(JavaVersion.current() != JavaVersion.VERSION_1_8){
+ 		implementation 'com.sun.xml.bind:jaxb-ri:2.3.5'   
+	}
+    
+    testImplementation "junit:junit:4.13.2"    
+}
+
+def getSemVersion = { ->
+
+	def versionStdOut = new ByteArrayOutputStream()
+
+	def cmd = ['gitversion', '/showvariable', 'SemVer']
+	
+	    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+	        def oscmd = ['cmd', '/c'] + cmd
+	        exec {
+	        	commandLine oscmd
+	        	standardOutput = versionStdOut
+        	}
+	    
+	    } else {
+	        def oscmd = ['sh'] + cmd
+	        exec {
+	        	commandLine oscmd
+	    		standardOutput = versionStdOut
+    		}
+    	}
+    
+    return versionStdOut.toString().trim()        	
+}
+
+
+compileJava {
+	project.version=getSemVersion()
+	println "Building " + rootProject.name + " v" + project.version
+}
+
+test {
+    // show standard out and standard error of the test JVM(s) on the console
+    testLogging.showStandardStreams = true
+
+    // set heap size for the test JVM(s)
+    maxHeapSize = "2048m"
+    
+    exclude '**/ProductionEnvironmentTest.class'
+}
+
+task integrationTest(type: Test) {
+	description = 'Runs the integration tests (unit tests run using the produced JAR file)'
+    group = 'verification'
+	dependsOn jar
+	
+	include '**/*.class'
+	
+	testLogging.showStandardStreams = true
+    testClassesDirs = sourceSets.test.output.classesDirs
+        
+    // set classpath to test classes + test dependencies + JAR
+    classpath = project.sourceSets.test.output + configurations.testRuntimeClasspath + files(jar.archiveFile) 
+    outputs.upToDateWhen { false }
+    mustRunAfter test
+    maxHeapSize = "2048m"
+}
+
+check.dependsOn integrationTest
+
+jar {	
+	 manifest {
+        attributes("Built-By": "Mathieu Fortin and Jean-Francois Lavoie",
+        		   "Specification-Title": "REpicea Metamodels",
+	       		   "Specification-Version": project.version,                   
+                   "Specification-Vendor": "REpicea",
+                   "Implementation-Title": "REpicea Metamodels",
+                   "Implementation-Version": project.version,
+                   "Implementation-Vendor": "REpicea",
+                   )
+    }
+    
+	into ('/') {
+		from files(['./README.txt', './COPYING.LESSER.txt'])			
+	}
+	
+	// include all java files from main sourceset into the jar file (resources are already included)
+	from sourceSets.main.allJava		
+}
+
+task deleteInstallFolder(type: Delete) {
+  delete "${installDir}"  
+}
+
+task install(type: Copy) {
+	description = 'Copies the output jar to installation folder.'
+	group = 'build'
+	dependsOn jar,deleteInstallFolder,integrationTest
+	from configurations.default
+	from jar
+	into "${installDir}"
+}
+
+publishing {
+    publications {
+        repicea(MavenPublication) {
+            from components.java
+        }
+    }
+
+    repositories {
+        maven {
+            name = 'LocalFile'
+            url = "file://${buildDir}/repo"
+        }
+    }
+}
+
+publishRepiceaPublicationToMavenLocal {
+	dependsOn integrationTest
+}
+
+publishRepiceaPublicationToLocalFileRepository {
+	dependsOn integrationTest
+}
+
+ 
