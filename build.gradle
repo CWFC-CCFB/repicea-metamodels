@@ -50,7 +50,8 @@ sourceSets {
 // make sure to set the compliance to Java 1.8 in the project properties if the Java version is later than 1.8
 // make sure to set Java Compiler > Errors Warnings > Deprecated and Restricted API > Forbidden reference to WARNING instead of ERROR
 dependencies {
-    implementation group: 'org', name: 'repicea', version: '[1.8.0,)'    
+    implementation group: 'org', name: 'repicea', version: '[1.9,)'    
+    implementation group: 'org', name: 'repicea-mathstats', version: '[1.0,)'    
     implementation 'com.cedarsoftware:json-io:4.13.0'
 
     if(JavaVersion.current() != JavaVersion.VERSION_1_8){
