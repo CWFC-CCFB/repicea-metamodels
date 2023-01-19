@@ -244,7 +244,12 @@ public class MetaModel implements Saveable {
 		return lastAccessed;
 	}
 
-	void add(int initialAge, ScriptResult result) {
+	/**
+	 * Add the result of a ScriptResult instance into the MetaModel instance
+	 * @param initialAge
+	 * @param result
+	 */
+	public void addScriptResult(int initialAge, ScriptResult result) {
 		boolean canBeAdded;
 		if (scriptResults.isEmpty()) {
 			canBeAdded = true;
@@ -534,10 +539,8 @@ public class MetaModel implements Saveable {
 	 * @param filename
 	 * @throws IOException
 	 */
-	public void exportFinalDataSet(String filename) throws IOException {
-		if (hasConverged()) {
-			getFinalDataSet().save(filename);
-		}
+	public void exportFinalDataSet(String filename) throws IOException, MetaModelException {
+		getFinalDataSet().save(filename);
 	}
 
 	/**
@@ -567,8 +570,16 @@ public class MetaModel implements Saveable {
 		model.mh.exportMetropolisHastingsSample(filename);
 	}
 
-	protected DataSet getFinalDataSet() {
-		return model.getFinalDataSet();
+	/**
+	 * Provide a DataSet instance with the observed values. 
+	 * @return a DataSet instance
+	 */
+	public DataSet getFinalDataSet() throws MetaModelException {
+		if (hasConverged()) {
+			return model.getFinalDataSet();
+		} else {
+			throw new MetaModelException("The model of this group : " + stratumGroup + " has not been fitted or has not converged yet!");
+		}
 	}
 
 	@Override

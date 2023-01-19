@@ -69,7 +69,7 @@ public class MetaModelTest {
 	}
 
 	@Test
-	public void testingMetaModelDeserialization() throws IOException {
+	public void testingMetaModelDeserialization() throws IOException, MetaModelException {
 		Assert.assertTrue("Model is deserialized", MetaModelInstance != null);
 		Assert.assertTrue("Has converged", MetaModelInstance.hasConverged());
 		String filename = ObjectUtility.getPackagePath(getClass()) + "finalDataSet.csv";
@@ -93,7 +93,7 @@ public class MetaModelTest {
 		Assert.assertEquals("Testing prediction at 90 yrs of age", 104.26481827545614, pred, 1E-8);
 	}
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, MetaModelException {
 //		AbstractModelImplementation.EstimateResidualVariance = true;
 		REpiceaTranslator.setCurrentLanguage(Language.English);
         System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$-6s %5$s%6$s%n");

@@ -61,111 +61,6 @@ public class MetaModelManager extends ConcurrentHashMap<String, MetaModel> imple
 	 */
 	public MetaModelManager() {}	
 
-	
-	/**
-	 * Add a DataSet instance to a particular stratum group. 
-	 * @param stratumGroup a String that stands for the stratum group
-	 * @param initialAgeYr the age of the stratum at the beginning of the simulation
-	 * @param result an ExtScriptResult instance that contains the simulation results
-	 * @throws MetaModelException 
-	 */
-	public void addDataset(String stratumGroup, int initialAgeYr, ScriptResult result) throws MetaModelException {		
-		if (!containsKey(stratumGroup)) {
-			throw new MetaModelException("No metamodel exists for the stratum group name " + stratumGroup);
-		}
-		MetaModel metaModel = get(stratumGroup);
-		metaModel.add(initialAgeYr, result);		
-	}
-	
-	/**
-	 * Add a DataSet instance to a particular stratum group. 
-	 * @param stratumGroup a String that stands for the stratum group
-	 * @param geoDomain the geographic domain of the source data
-	 * @param dataSource the origin of the source data (ex: fourth inventory)
-	 * @throws MetaModelException 
-	 */
-	public void createMetaModel(String stratumGroup, String geoDomain, String dataSource) throws MetaModelException {		
-		if (containsKey(stratumGroup)) {
-			throw new MetaModelException("A metamodel already exists for the stratum group name " + stratumGroup);
-		}	
-		
-		put(stratumGroup, new MetaModel(stratumGroup, geoDomain, dataSource));
-	}
-	
-	/**
-	 * Fit all the meta-models.
-	 * @param outputType the output type to which the model is to be fitted
-	 * @param modImpl an implementation for the meta-model.
-	 * @throws an ExtMetaModelException if one of the models has not converged.
-	 */
-	public void fitMetaModels(String outputType, ModelImplEnum modImpl) throws MetaModelException {
-		this.fitMetaModels(keySet(), outputType, modImpl);
-		for (String stratumGroup : keySet()) {
-			MetaModel metaModel = get(stratumGroup);
-			if (!metaModel.hasConverged()) {
-				throw new MetaModelException("The meta-model for this stratum group has not converged: " + stratumGroup);
-			}
-		}
-	}
-
-	/**
-	 * Fit all the meta-models using the default implementation 
-	 * "Richards-Chapman including random effects".
-	 * @param outputType the output type to which the model is to be fitted
-	 * @throws an ExtMetaModelException if one of the models has not converged.
-	 */
-	public void fitMetaModels(String outputType) throws MetaModelException {
-		fitMetaModels(outputType, ModelImplEnum.ChapmanRichardsWithRandomEffect);
-	}
-
-	/**
-	 * Fit the meta-models identified in the stratumGroups argument using the default model
-	 * implementation "Richards-Chapman including random effects".
-	 * @param stratumGroups a Collection of stratum group ids
-	 * @param outputType the output type to which the model is to be fitted
-	 * @throws an ExtMetaModelException if one of the models has not converged.
-	 */
-	public void fitMetaModels(Collection<String> stratumGroups, String outputType) throws MetaModelException {
-		fitMetaModels(stratumGroups, outputType, ModelImplEnum.ChapmanRichardsWithRandomEffect);
-	}
-	
-	/**
-	 * Fit the meta-models identified in the stratumGroups argument.
-	 * @param stratumGroups a Collection of stratum group ids
-	 * @param outputType the output type to which the model is to be fitted
-	 * @param modImpl an implementation for the meta-model.
-	 * @throws an ExtMetaModelException if one of the models has not converged.
-	 */
-	public void fitMetaModels(Collection<String> stratumGroups, String outputType, ModelImplEnum modImpl) throws MetaModelException {
-		
-		int NbWorkers = (int)((long) JSONConfigurationGlobal.getInstance().get(REpiceaJSONConfiguration.processingMaxThreads, 2L));
-		
-		// there is no point in creating more worker threads than there are stratumGroups, so limit their number if needed
-		NbWorkers = NbWorkers > stratumGroups.size() ? stratumGroups.size() : NbWorkers; 
-		
-		try {
-			LinkedBlockingQueue queue = new LinkedBlockingQueue();
-			List<MetaModelManagerWorker> workers = new ArrayList<MetaModelManagerWorker>();
-			for (int i = 0; i < NbWorkers; i++) {
-				workers.add(new MetaModelManagerWorker(i, queue, outputType, modImpl));
-			}
-			
-			for (String stratumGroup : stratumGroups) {
-				MetaModel metaModel = get(stratumGroup);
-				queue.add(metaModel);
-			}
-			
-			for (int i = 0; i < NbWorkers; i++) {
-				queue.add(MetaModelManagerWorker.FinishToken);
-			}
-			for (MetaModelManagerWorker t : workers) {
-				t.join();
-			}
-		} catch (InterruptedException e) {
-			throw new MetaModelException(e.getMessage());
-		}
-	}
-	
 	/**
 	 * Compute and return the prediction generated from a particular meta-model.
 	 * @param stratumGroup a String that stands for the stratum group
@@ -245,21 +140,6 @@ public class MetaModelManager extends ConcurrentHashMap<String, MetaModel> imple
 	}
 
 	/**
-	 * Save a particular instance of meta model to file.
-	 * @param stratumGroup
-	 * @param filename
-	 * @throws IOException
-	 */
-	public void saveMetaModel(String stratumGroup, String filename) throws IOException {
-		if (containsKey(stratumGroup)) {
-			MetaModel metaModel = get(stratumGroup);
-			metaModel.save(filename);
-		} else {
-			throw new InvalidParameterException("This stratum group is not recognized: " + stratumGroup);
-		}
-	}
-	
-	/**
 	 * Load an instance of meta model from file and add it to the meta model manager.
 	 * @param stratumGroup
 	 * @param filename
@@ -273,26 +153,5 @@ public class MetaModelManager extends ConcurrentHashMap<String, MetaModel> imple
 		put(stratumGroup, metaModel);
 	}
 	
-	
-	
-	
-	/**
-	 * Provide a final data set including the prediction of the meta model. 
-	 * @param stratumGroup the stratum group
-	 * @return a DataSet instance
-	 * @throws MetaModelException if the stratum group does not exist or the model has not been fitted or has not converged yet.
-	 */
-	public DataSet getMetaModelResult(String stratumGroup) throws MetaModelException {
-		if (containsKey(stratumGroup)) {
-			MetaModel model = get(stratumGroup);
-			if (model.hasConverged()) {
-				return model.getFinalDataSet();
-			} else {
-				throw new MetaModelException("The model of this group : " + stratumGroup + " has not been fitted or has not converged yet!");
-			}
-		} else {
-			throw new MetaModelException("This stratum group is not recognized: " + stratumGroup);
-		}
-	}
  	
 }
