@@ -661,4 +661,33 @@ public class MetaModel implements Saveable {
 			return true;
 		}
 	}
+
+	/**
+	 * Save a lighter version of a previously serialized meta-model. <br>
+	 * <br>
+	 * This lighter version drops the final sample selection for a lighter deserialization.
+	 * 
+	 * @param filename the filename of the serialized instance
+	 * @throws IOException
+	 */
+	public static void convertToLightVersion(String filename) throws IOException {
+		MetaModel instance = Load(filename);
+		instance.model.mh.releaseFinalSampleSelection();
+		String newFilename = getLightVersionFilename(filename);
+		XmlSerializer serializer = new XmlSerializer(newFilename);
+		serializer.writeObject(instance);
+	}
+
+	/**
+	 * Provide the filename for the light version of the MetaModel instance. <br>
+	 * <br> 
+	 * The suffix "_light" is inserted before the extension.
+	 * 
+	 * @param originalFilename the original filename.
+	 * @return the filename for the light version
+	 */
+	public static String getLightVersionFilename(String originalFilename) {
+		String newFilename = originalFilename.substring(0, originalFilename.lastIndexOf(".")) + "_light" + originalFilename.substring(originalFilename.lastIndexOf("."));
+		return newFilename;
+	}
 }
