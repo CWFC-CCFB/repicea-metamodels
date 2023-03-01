@@ -191,11 +191,17 @@ public class MetaModel implements Saveable {
 	private transient LocalDateTime lastAccessed;	// the last datetime at which this metamodel was accessed (used in cache management in CFSStandGrowth) 
 	
 	public enum PredictionVarianceOutputType {
-		// no variance output
+		/**
+		 * No variance output
+		 */ 
 		NONE,			
-		// Parameter estimates variance only
+		/**
+		 * Parameter estimates variance only
+		 */
 		PARAMEST,
-		// parameter estimates variance including random effects
+		/**
+		 * Parameter estimates variance including random effects
+		 */
 		PARAMESTRE,
 	}
 

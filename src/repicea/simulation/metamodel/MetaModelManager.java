@@ -18,24 +18,19 @@
  */
 package repicea.simulation.metamodel;
 
+import java.io.File;
 import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 
-import repicea.app.JSONConfigurationGlobal;
-import repicea.app.REpiceaJSONConfiguration;
 import repicea.io.Loadable;
 import repicea.io.Saveable;
 import repicea.serial.xml.XmlDeserializer;
 import repicea.serial.xml.XmlSerializer;
 import repicea.serial.xml.XmlSerializerChangeMonitor;
-import repicea.simulation.metamodel.MetaModel.ModelImplEnum;
-import repicea.stats.data.DataSet;
 
 /**
  * Handle different instances of ExtMetaModel. It is thread safe.
@@ -149,7 +144,11 @@ public class MetaModelManager extends ConcurrentHashMap<String, MetaModel> imple
 		if (stratumGroup == null) {
 			throw new InvalidParameterException("The stratum group cannot be null!");
 		}
-		MetaModel metaModel = MetaModel.Load(filename);
+    	String newFilename = repicea.simulation.metamodel.MetaModel.getLightVersionFilename(filename);
+    	if (!new File(newFilename).exists()) {	// then we convert the original version of the meta model into a light version for later deserialization
+    		MetaModel.convertToLightVersion(filename);
+    	}
+		MetaModel metaModel = MetaModel.Load(newFilename);
 		put(stratumGroup, metaModel);
 	}
 	
