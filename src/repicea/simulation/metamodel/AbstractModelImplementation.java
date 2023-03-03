@@ -29,6 +29,7 @@ import java.util.Map;
 import repicea.math.Matrix;
 import repicea.math.SymmetricMatrix;
 import repicea.simulation.metamodel.MetaModel.ModelImplEnum;
+import repicea.simulation.scriptapi.ScriptResult;
 import repicea.stats.StatisticalUtility;
 import repicea.stats.StatisticalUtility.TypeMatrixR;
 import repicea.stats.data.DataBlock;
@@ -173,7 +174,7 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 			DataBlock db = formattedMap.get(k);
 			List<Integer> indices = db.getIndices();
 			int age = Integer.parseInt(k.substring(0, k.indexOf("_")));
-			int nbPlots = scriptResults.get(age).nbPlots;
+			int nbPlots = scriptResults.get(age).getNbPlots();
 			dataBlockWrappers.add(createWrapper(k, indices, vectorY, matrixX, varCov, nbPlots));
 		}
 		

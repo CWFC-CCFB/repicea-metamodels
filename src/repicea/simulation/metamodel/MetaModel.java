@@ -43,6 +43,7 @@ import repicea.math.SymmetricMatrix;
 import repicea.serial.xml.XmlDeserializer;
 import repicea.serial.xml.XmlSerializer;
 import repicea.serial.xml.XmlSerializerChangeMonitor;
+import repicea.simulation.scriptapi.ScriptResult;
 import repicea.stats.StatisticalUtility;
 import repicea.stats.data.DataSet;
 import repicea.stats.data.StatisticalDataException;
@@ -68,6 +69,8 @@ public class MetaModel implements Saveable {
 				"repicea.stats.estimators.mcmc.MetropolisHastingsPriorHandler");
 		XmlSerializerChangeMonitor.registerClassNameChange("repicea.stats.mcmc.MetropolisHastingsSample",
 				"repicea.stats.estimators.mcmc.MetropolisHastingsSample");
+		XmlSerializerChangeMonitor.registerClassNameChange("repicea.simulation.metamodel.ScriptResult",
+				"repicea.simulation.scriptapi.ScriptResult");
 	}
 
 
@@ -95,8 +98,9 @@ public class MetaModel implements Saveable {
 					if (firstElement) {
 						// fill in data that is constant 	
 						data.growth.nbRealizations = result.getNbRealizations();
-						data.growth.climateChangeOption = ((Enum<?>)result.climateChangeScenario).name();
-						data.growth.growthModel = result.growthModel;							
+//						data.growth.climateChangeOption = ((Enum<?>)result.climateChangeScenario).name();
+						data.growth.climateChangeOption = result.getClimateChangeScenario();
+						data.growth.growthModel = result.getGrowthModel();							
 					}
 
 					// DateYrFieldName && upscaling
@@ -112,7 +116,7 @@ public class MetaModel implements Saveable {
 					data.growth.dataSourceYears.put(key, temp);
 
 					// nbPlots
-					data.growth.nbPlots.put(key, result.nbPlots);													
+					data.growth.nbPlots.put(key, result.getNbPlots());													
 				}
 			}
 
