@@ -1,20 +1,56 @@
+/*
+ *  Build file for gradle
+ */
+
+
+plugins {
+    id 'com.palantir.git-version' version '3.0.0'
+    id 'maven-publish'
+    id 'signing'
+}
+
+
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
-apply plugin: 'maven-publish'
 
-group = 'org'
-version = project.version
+
+task sourcesJar(type: Jar) {
+	 archiveClassifier = 'sources'
+	 manifest {
+        attributes("Built-By": "Mathieu Fortin and Jean-Francois Lavoie",
+        		   "Specification-Title": "REpicea Meta-Models sources",
+	       		   "Specification-Version": project.version,                   
+                   "Specification-Vendor": "CWFC-CCFB",
+                   "Implementation-Title": "repicea-metamodels",
+                   "Implementation-Version": project.version,
+                   "Implementation-Vendor": "CWFC-CCFB",
+                   )
+    }
+   	duplicatesStrategy = DuplicatesStrategy.EXCLUDE		// to avoid duplicate files
+    
+	into ('/') {
+		from files(['./README.md', './LICENSE.md'])			
+	}
+	
+	// include all java files from main sourceset into the jar file (resources are already included)
+	from sourceSets.main.java
+	from sourceSets.main.resources		
+}
 
 java {
-  toolchain {
-    languageVersion.set(JavaLanguageVersion.of(8))
+  toolchain { 
+        languageVersion = JavaLanguageVersion.of(8)
   }
+  withSourcesJar()
+  withJavadocJar()
 }
 
 repositories {
+	maven {		// sonatype repository
+		url "https://repo1.maven.org/maven2/"
+	}
     mavenCentral()
-    mavenLocal()
 }
 
 println "Using java version " + JavaVersion.current()
@@ -47,49 +83,33 @@ sourceSets {
     }               
 }
 
+configurations {
+	repiceaImplementation {
+		extendsFrom implementation
+		description = 'Main implementation'
+		canBeResolved = true
+	}
+}
+
 // make sure to set the compliance to Java 1.8 in the project properties if the Java version is later than 1.8
 // make sure to set Java Compiler > Errors Warnings > Deprecated and Restricted API > Forbidden reference to WARNING instead of ERROR
 dependencies {
-    implementation group: 'org', name: 'repicea', version: '[1.9.2,)'    
-    implementation group: 'org', name: 'repicea-mathstats', version: '[1.1.3,)'    
-    implementation group: 'org', name: 'repicea-simulation', version: '[1.0.4,)'    
+    implementation group: 'io.github.cwfc-ccfb', name: 'repicea', version: '[1.9.5,)'    
+    implementation group: 'io.github.cwfc-ccfb', name: 'repicea-mathstats', version: '[1.1.4,)'    
+    implementation group: 'io.github.cwfc-ccfb', name: 'repicea-simulation', version: '[1.0.2,)'    
     implementation 'com.cedarsoftware:json-io:4.13.0'
 
-    if(JavaVersion.current() != JavaVersion.VERSION_1_8){
+    if (JavaVersion.current() != JavaVersion.VERSION_1_8) {
  		implementation 'com.sun.xml.bind:jaxb-ri:2.3.5'   
 	}
     
     testImplementation "junit:junit:4.13.2"    
 }
 
-def getSemVersion = { ->
-
-	def versionStdOut = new ByteArrayOutputStream()
-
-	def cmd = ['gitversion', '/showvariable', 'SemVer']
-	
-	    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
-	        def oscmd = ['cmd', '/c'] + cmd
-	        exec {
-	        	commandLine oscmd
-	        	standardOutput = versionStdOut
-        	}
-	    
-	    } else {
-	        def oscmd = ['sh'] + cmd
-	        exec {
-	        	commandLine oscmd
-	    		standardOutput = versionStdOut
-    		}
-    	}
-    
-    return versionStdOut.toString().trim()        	
-}
-
-
 compileJava {
-	project.version=getSemVersion()
-	println "Building " + rootProject.name + " v" + project.version
+	project.version= gitVersion() 
+	println "Building " + rootProject.name + " " + project.version
+	println "Installation directory " + "../externallibraries/" + rootProject.name
 }
 
 test {
@@ -100,6 +120,26 @@ test {
     maxHeapSize = "2048m"
     
     exclude '**/ProductionEnvironmentTest.class'
+}
+
+jar {	
+	 manifest {
+        attributes("Built-By": "Mathieu Fortin and Jean-Francois Lavoie",
+        		   "Specification-Title": "REpicea Meta-Models",
+	       		   "Specification-Version": project.version,                   
+                   "Specification-Vendor": "CWFC-CCFB",
+                   "Implementation-Title": "repicea-metamodels",
+                   "Implementation-Version": project.version,
+                   "Implementation-Vendor": "CWFC-CCFB",
+                   )
+    }
+    
+	into ('/') {
+		from files(['./README.md', './LICENSE.md'])			
+	}
+	
+	// include all java files from main sourceset into the jar file (resources are already included)
+	from sourceSets.main.allJava		
 }
 
 task integrationTest(type: Test) {
@@ -121,60 +161,82 @@ task integrationTest(type: Test) {
 
 check.dependsOn integrationTest
 
-jar {	
-	 manifest {
-        attributes("Built-By": "Mathieu Fortin and Jean-Francois Lavoie",
-        		   "Specification-Title": "REpicea Metamodels",
-	       		   "Specification-Version": project.version,                   
-                   "Specification-Vendor": "REpicea",
-                   "Implementation-Title": "REpicea Metamodels",
-                   "Implementation-Version": project.version,
-                   "Implementation-Vendor": "REpicea",
-                   )
-    }
-    
-	into ('/') {
-		from files(['./README.txt', './COPYING.LESSER.txt'])			
-	}
-	
-	// include all java files from main sourceset into the jar file (resources are already included)
-	from sourceSets.main.allJava		
-}
-
 task deleteInstallFolder(type: Delete) {
-  delete "${installDir}"  
+  delete "../externallibraries/" + rootProject.name
 }
 
 task install(type: Copy) {
 	description = 'Copies the output jar to installation folder.'
 	group = 'build'
-	dependsOn jar,deleteInstallFolder,integrationTest
-	from configurations.default
+	dependsOn deleteInstallFolder,integrationTest
+	from configurations.repiceaImplementation
 	from jar
-	into "${installDir}"
+	into "../externallibraries/" + rootProject.name
 }
 
 publishing {
     publications {
         repicea(MavenPublication) {
-            from components.java
+          	from components.java
+        	pom {
+        		name = 'REpicea Meta-Models'
+				group = 'io.github.cwfc-ccfb'
+        		description = 'An extension of repicea for meta-models'
+        		url = 'https://github.com/CWFC-CCFB/repicea-metamodels'
+        		properties = [
+        			packaging: "jar"
+	       		]
+        		licenses {
+        			license {
+        				name = 'GNU Lesser General Public License 2.1'
+        				url  = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html'
+        			}
+        		}
+        		developers {
+        			developer {
+        				id = 'matfortin'
+        				name = 'Mathieu Fortin'
+        				email = 'mathieu.fortin.re@gmail.com'
+        			}        
+        			developer {
+        				id = 'jflavoie'
+        				name = 'Jean-Francois Lavoie'
+        				email = 'atmailjfl@gmail.com'
+        			}
+        		}
+        		
+                scm {
+          			connection = 'scm:git:https://github.com/CWFC-CCFB/repicea-metamodels'
+          			developerConnection = 'scm:git:https://github.com/CWFC-CCFB/repicea-metamodels'
+          			url = 'https://github.com/CWFC-CCFB/repicea-metamodels'
+        		}
+		     }	
         }
     }
-
     repositories {
         maven {
             name = 'LocalFile'
             url = "file://${buildDir}/repo"
         }
+
+		maven {
+		 	name = 'Sonatype'
+		 	credentials(PasswordCredentials)
+		 	url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+		}
     }
 }
 
+signing {
+    sign publishing.publications.repicea
+}
+
 publishRepiceaPublicationToMavenLocal {
-	dependsOn integrationTest
+	dependsOn jar
 }
 
 publishRepiceaPublicationToLocalFileRepository {
-	dependsOn integrationTest
+	dependsOn jar
 }
 
  

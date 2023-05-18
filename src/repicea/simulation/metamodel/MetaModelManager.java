@@ -61,7 +61,6 @@ public class MetaModelManager extends ConcurrentHashMap<String, MetaModel> imple
 	 * @param stratumGroup a String that stands for the stratum group
 	 * @param ageYr the age of the stratum (yr) 
 	 * @param timeSinceInitialDateYr the time since the initial date (yr)
-	 * @param outputType a String e.g. Broadleaved, Coniferous
 	 * @return a double
 	 * @throws MetaModelException if the model has not been fitted or if the stratum group is not found in the Map.
 	 */
@@ -83,12 +82,10 @@ public class MetaModelManager extends ConcurrentHashMap<String, MetaModel> imple
 	}
 	
 	/**
-	 * Provide the stratum groups 
-	 * @param stratumGroup a String that stands for the stratum group.
+	 * Provide the stratum groups. 
 	 * @return a List of String (sorted)
-	 * 
 	 */
-	public List<String> getStratumGroups() throws MetaModelException {
+	public List<String> getStratumGroups() {
 		ArrayList<String> list = Collections.list(keys());
 		list.sort(null);
 		return list;
@@ -136,9 +133,9 @@ public class MetaModelManager extends ConcurrentHashMap<String, MetaModel> imple
 
 	/**
 	 * Load an instance of meta model from file and add it to the meta model manager.
-	 * @param stratumGroup
-	 * @param filename
-	 * @throws IOException
+	 * @param stratumGroup the name of the stratum group
+	 * @param filename the path to the file to be loaded
+	 * @throws IOException if an I/O error has occurred
 	 */
 	public void loadMetaModel(String stratumGroup, String filename) throws IOException {
 		if (stratumGroup == null) {

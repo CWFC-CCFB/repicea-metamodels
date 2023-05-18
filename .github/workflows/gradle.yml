@@ -1,0 +1,43 @@
+# This workflow is inspired by the example shown at
+# https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle 
+#
+# Author Mathieu Fortin
+#
+# GitHub recommends pinning actions to a commit SHA.
+# To get a newer version, you will need to update the SHA.
+# You can also reference a tag or branch, but the action may change without warning.
+
+name: Java CI
+
+on: [push]
+
+jobs:
+  gradle:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        java: [8, 11, 17]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Java ${{ matrix.java }}
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: ${{ matrix.java }}
+    
+    - name: Install xvfb with Linux if needed
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: sudo apt-get install xvfb
+    
+    - name: Setup Gradle
+      uses: gradle/gradle-build-action@v2
+
+    - name: Execute Gradle 'integrationTest' task on Linux
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: xvfb-run ./gradlew integrationTest
+
+    - name: Execute Gradle 'integrationTest' task on other OS
+      if: ${{ matrix.os != 'ubuntu-latest' }}
+      run: ./gradlew integrationTest  

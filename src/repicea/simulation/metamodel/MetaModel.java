@@ -1,5 +1,5 @@
 /*
- * This file is part of the repicea library.
+ * This file is part of the repicea-metamodels library.
  *
  * Copyright (C) 2009-2021 Mathieu Fortin for Rouge Epicea.
  *
@@ -53,8 +53,7 @@ import repicea.util.REpiceaLogManager;
 
 
 /**
- * A package class that handles the data set and fits the meta model. It
- * implements Runnable for an eventual multi-threaded implementation.
+ * A class that handles the data set and fits the meta-model for a group of strata.
  * 
  * @author Mathieu Fortin - December 2020
  */
@@ -211,8 +210,9 @@ public class MetaModel implements Saveable {
 
 	/**
 	 * Constructor.
-	 * 
 	 * @param stratumGroup a String representing the stratum group
+	 * @param geoDomain a String instance referring to the geographical area
+	 * @param dataSource a String instance referring to the source of data 
 	 */
 	public MetaModel(String stratumGroup, String geoDomain, String dataSource) {
 		this.stratumGroup = stratumGroup;
@@ -237,9 +237,9 @@ public class MetaModel implements Saveable {
 	}
 
 	/**
-	 * Return the state of the model. The model can be used if it has converged.
-	 * 
-	 * @return
+	 * Return the state of the model.<p>
+	 * The model can be used if it has converged.
+	 * @return a boolean true if it has converged
 	 */
 	public boolean hasConverged() {
 		return model != null ? model.hasConverged() : false;
@@ -256,8 +256,8 @@ public class MetaModel implements Saveable {
 
 	/**
 	 * Add the result of a ScriptResult instance into the MetaModel instance
-	 * @param initialAge
-	 * @param result
+	 * @param initialAge the age of the stratum
+	 * @param result a ScriptResult instance containing the stratum projection from the original 
 	 */
 	public void addScriptResult(int initialAge, ScriptResult result) {
 		boolean canBeAdded;
@@ -302,11 +302,9 @@ public class MetaModel implements Saveable {
 	}
 
 	/**
-	 * Return the possible output types given what they are in the ScriptResult
-	 * instances.
-	 * 
+	 * Provide the possible output types.<p>
+	 * Those are retrieved from the ScriptResult instances.
 	 * @return a List of String
-	 * @throws MetaModelException
 	 */
 	public List<String> getPossibleOutputTypes() {
 		return getPossibleOutputTypes(scriptResults);
@@ -370,9 +368,8 @@ public class MetaModel implements Saveable {
 	/**
 	 * Fit the meta-model.
 	 * 
-	 * @param outputType the output type the model will be fitted to (e.g.
-	 *                   volumeAlive_Coniferous)
-	 * @param e          a ModelImplEnum enum
+	 * @param outputType the output type the model will be fitted to (e.g., volumeAlive_Coniferous)
+	 * @param enableMixedModelImplementations true to test meta-models with stratum random effects
 	 * @return a boolean true if the model has converged or false otherwise
 	 */
 	public boolean fitModel(String outputType, boolean enableMixedModelImplementations) {
@@ -414,11 +411,12 @@ public class MetaModel implements Saveable {
 	}
 
 	/**
-	 * Gets a single prediction using the model parameters
+	 * Provide a single prediction using the model parameters
 	 * 
 	 * @param ageYr The ageYr for which the prediction is to be computed                   
 	 * @param timeSinceInitialDateYr The number of years since initial date year for the prediction
 	 * @return the prediction
+	 * @throws MetaModelException if the meta-model has not converged
 	 */
 	public double getPrediction(int ageYr, int timeSinceInitialDateYr) throws MetaModelException {
 		if (hasConverged()) {
@@ -440,7 +438,7 @@ public class MetaModel implements Saveable {
 	
 	
 	/**
-	 * Gets multiple predictions and associated variance using the model parameters  
+	 * Provide multiple predictions and associated variance using the model parameters  
 	 * 
 	 * @param ageYr An array of all ageYrs for which the predictions are to be computed                   
 	 * @param timeSinceInitialDateYr The number of years since initial date year for the predictions
@@ -450,6 +448,7 @@ public class MetaModel implements Saveable {
 	 * 			PARAMESTRE returns variance for parameter estimates including random effect on variance
 	 * 			 
 	 * @return the predictions two different maps : one for PREDICTIONS and one for PREDICTION_VARIANCE
+	 * @throws MetaModelException if the meta-model has not converged
 	 */
 	public LinkedHashMap<String, LinkedHashMap<Integer, Double>> getPredictions(int[] ageYr, int timeSinceInitialDateYr, PredictionVarianceOutputType varianceOutputType) throws MetaModelException {
 		LinkedHashMap<String, LinkedHashMap<Integer, Double>> result = new LinkedHashMap<String, LinkedHashMap<Integer, Double>>();
@@ -467,7 +466,7 @@ public class MetaModel implements Saveable {
 	}
 	
 	/**
-	 * Gets multiple predictions sets using the model parameters using Monte Carlo simulation on model parameters 
+	 * Provide multiple predictions sets using the model parameters using Monte Carlo simulation on model parameters 
 	 * 
 	 * @param ageYr An array of all ageYrs for which the predictions are to be computed                   
 	 * @param timeSinceInitialDateYr The number of years since initial date year for the predictions
@@ -475,7 +474,9 @@ public class MetaModel implements Saveable {
 	 * @param nbRealizations The number of realizations to generate random parameters for (use 0 to disable MC simulation)
 	 * 			 
 	 * @return the predictions two different maps : one for PREDICTIONS and one for PREDICTION_VARIANCE
-	 */	public LinkedHashMap<Integer, LinkedHashMap<Integer, LinkedHashMap<Integer, Double>>> getMonteCarloPredictions(int[] ageYr, int timeSinceInitialDateYr, int nbSubjects, int nbRealizations) throws MetaModelException {
+	 * @throws MetaModelException if the meta-model has not converged
+	 */	
+	public LinkedHashMap<Integer, LinkedHashMap<Integer, LinkedHashMap<Integer, Double>>> getMonteCarloPredictions(int[] ageYr, int timeSinceInitialDateYr, int nbSubjects, int nbRealizations) throws MetaModelException {
 		if (hasConverged()) {
 			boolean randomEffectVariabilityEnabled = nbSubjects > 0;
 			boolean parameterVariabilityEnabled = nbRealizations > 0;
@@ -544,10 +545,12 @@ public class MetaModel implements Saveable {
 
 	/**
 	 * Export a final dataset, that is the initial data set plus the meta-model
-	 * predictions. This works only if the model has converged.
+	 * predictions.<p>
+	 * This works only if the model has converged.
 	 * 
-	 * @param filename
-	 * @throws IOException
+	 * @param filename the name of the file
+	 * @throws IOException if an I/O error has occurred
+	 * @throws MetaModelException if the model has not converged
 	 */
 	public void exportFinalDataSet(String filename) throws IOException, MetaModelException {
 		getFinalDataSet().save(filename);
@@ -568,13 +571,14 @@ public class MetaModel implements Saveable {
 
 	/**
 	 * Save a CSV file containing the final sequence produced by the
-	 * Metropolis-Hastings algorithm, that is without the burn-in period and with
-	 * only every nth observation. The number of burn-in samples to be dropped is
-	 * set by the nbBurnIn member while every nth observation is set by the oneEach
-	 * member.
+	 * Metropolis-Hastings algorithm. <p>
+	 * This sequence does not include burn-in period and only every nth observation 
+	 * from the sequence is kept in this final sequence. The number of burn-in samples 
+	 * to be dropped is set by the nbBurnIn member while every nth observation is set 
+	 * by the oneEach member.
 	 * 
-	 * @param filename
-	 * @throws IOException
+	 * @param filename the name of the file
+	 * @throws IOException if an I/O error has occurred
 	 */
 	void exportMetropolisHastingsSample(String filename) throws IOException {
 		model.mh.exportMetropolisHastingsSample(filename);
@@ -583,6 +587,7 @@ public class MetaModel implements Saveable {
 	/**
 	 * Provide a DataSet instance with the observed values. 
 	 * @return a DataSet instance
+	 * @throws MetaModelException if the model has not converged
 	 */
 	public DataSet getFinalDataSet() throws MetaModelException {
 		if (hasConverged()) {
@@ -611,11 +616,11 @@ public class MetaModel implements Saveable {
 	}
 
 	/**
-	 * Load a meta-model instance from file
+	 * Load a meta-model instance from file.
 	 * 
-	 * @param filename
+	 * @param filename the path to the file
 	 * @return a MetaModel instance
-	 * @throws IOException
+	 * @throws IOException if an I/O error has occurred
 	 */
 	public static MetaModel Load(String filename) throws IOException {
 		XmlDeserializer deserializer = new XmlDeserializer(filename);
@@ -627,13 +632,11 @@ public class MetaModel implements Saveable {
 		return metaModel;
 	}
 
-//	public void printSummary() {
-//		DataSet d = getSummary();
-//		if (d != null) {
-//			System.out.println(model.getSummary());
-//		}
-//	}
-
+	/**
+	 * Provide a summary of the model. 
+	 * 
+	 * @return the summary in a String instance or null if the model has not converged
+	 */
 	public String getSummary() {
 		if (hasConverged()) {
 			return model.getSummary();
@@ -643,6 +646,10 @@ public class MetaModel implements Saveable {
 		}
 	}
 
+	/**
+	 * Provide the comparison between the different meta-models.
+	 * @return a DataSet instance or null if the meta-model has not converged
+	 */
 	public DataSet getModelComparison() {
 		if (hasConverged()) {
 			return modelComparison;
@@ -653,8 +660,7 @@ public class MetaModel implements Saveable {
 	}
 
 	/**
-	 * Check if the variance is available throughout the ScriptResult instances. <br>
-	 * <br>
+	 * Check if the variance is available throughout the ScriptResult instances. <p>
 	 * It returns false if the scriptResults map is empty or at least one ScriptResult instance does 
 	 * not have its variance field.
 	 * @return a boolean
@@ -673,12 +679,11 @@ public class MetaModel implements Saveable {
 	}
 
 	/**
-	 * Save a lighter version of a previously serialized meta-model. <br>
-	 * <br>
+	 * Save a lighter version of a previously serialized meta-model. <p>
 	 * This lighter version drops the final sample selection for a lighter deserialization.
 	 * 
 	 * @param filename the filename of the serialized instance
-	 * @throws IOException
+	 * @throws IOException if an I/O error has occurred
 	 */
 	public static void convertToLightVersion(String filename) throws IOException {
 		MetaModel instance = Load(filename);
@@ -689,8 +694,7 @@ public class MetaModel implements Saveable {
 	}
 
 	/**
-	 * Provide the filename for the light version of the MetaModel instance. <br>
-	 * <br> 
+	 * Provide the filename for the light version of the MetaModel instance. <p>
 	 * The suffix "_light" is inserted before the extension.
 	 * 
 	 * @param originalFilename the original filename.
