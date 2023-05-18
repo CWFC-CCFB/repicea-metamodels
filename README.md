@@ -1,13 +1,13 @@
 
 <!-- badges: start -->
-[![Java CI](https://github.com/CWFC-CCFB/repicea-simulation/actions/workflows/gradle.yml/badge.svg)](https://github.com/CWFC-CCFB/repicea-simulation/actions/workflows/gradle.yml)
+[![Java CI](https://github.com/CWFC-CCFB/repicea-metamodels/actions/workflows/gradle.yml/badge.svg)](https://github.com/CWFC-CCFB/repicea-metamodels/actions/workflows/gradle.yml)
 <!-- badges: end -->
 
 
-The repicea-simulation library
+The repicea-metamodels library
 =====================================
 
-An extension of repicea for simulation.
+An extension of repicea for the meta-modelling of stratum group projections.
 
 Copyright (C) 2009-2021 Mathieu Fortin for Rouge Epicea.
 
@@ -34,3 +34,4 @@ by a GNU Lesser General Public License.
 This library relies on 
 - repicea (licensed LGPL-2.1)  
 - repicea-mathstats (licensed LGPL-2.1)
+- repicea-simulation (licensed LGPL-2.1)
