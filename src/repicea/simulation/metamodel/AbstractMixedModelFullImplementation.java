@@ -18,10 +18,7 @@
  */
 package repicea.simulation.metamodel;
 
-import java.util.List;
-
 import repicea.math.Matrix;
-import repicea.stats.data.HierarchicalStatisticalDataStructure;
 import repicea.stats.data.StatisticalDataException;
 import repicea.stats.distributions.GaussianDistribution;
 
@@ -40,16 +37,6 @@ abstract class AbstractMixedModelFullImplementation extends AbstractModelImpleme
 	AbstractMixedModelFullImplementation(String outputType, MetaModel metaModel) throws StatisticalDataException {
 		super(outputType, metaModel);
 	}
-
-//	@Override
-//	protected final AbstractDataBlockWrapper createWrapper(String k, 
-//			List<Integer> indices, 
-//			Matrix vectorY, 
-//			Matrix matrixX, 
-//			Matrix varCov, 
-//			int nbPlots) {
-//		return new DataBlockWrapper(k, indices, vectorY, matrixX, varCov, nbPlots);
-//	}
 
 	@Override
 	protected double getLogLikelihoodForThisBlock(Matrix parameters, int i) {

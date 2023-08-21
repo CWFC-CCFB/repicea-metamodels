@@ -19,19 +19,10 @@
 
 package repicea.simulation.metamodel;
 
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.TreeMap;
-
-import repicea.io.Loadable;
-import repicea.io.Saveable;
-import repicea.serial.xml.XmlSerializer;
-import com.cedarsoftware.util.io.JsonObject;
-import com.cedarsoftware.util.io.JsonReader;
-import com.cedarsoftware.util.io.JsonWriter;
 
 
 /**

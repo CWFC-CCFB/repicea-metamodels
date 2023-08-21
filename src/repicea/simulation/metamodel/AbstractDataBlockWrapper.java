@@ -24,7 +24,7 @@ import java.util.List;
 import repicea.math.AbstractMathematicalFunction;
 import repicea.math.Matrix;
 import repicea.math.SymmetricMatrix;
-import repicea.stats.integral.GaussHermiteQuadrature;
+import repicea.math.integral.GaussHermiteQuadrature;
 
 /**
  * The AbstractDataBlockWrapper is a likelihood function. The getValue() method 
@@ -34,7 +34,7 @@ import repicea.stats.integral.GaussHermiteQuadrature;
  */
 @SuppressWarnings("serial")
 abstract class AbstractDataBlockWrapper extends AbstractMathematicalFunction {
-	
+
 	final Matrix vecY;
 	final Matrix timeSinceBeginning;
 	final Matrix timeToOrigin;

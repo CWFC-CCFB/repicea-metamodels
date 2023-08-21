@@ -70,6 +70,12 @@ public class MetaModel implements Saveable {
 				"repicea.stats.estimators.mcmc.MetropolisHastingsSample");
 		XmlSerializerChangeMonitor.registerClassNameChange("repicea.simulation.metamodel.ScriptResult",
 				"repicea.simulation.scriptapi.ScriptResult");
+		XmlSerializerChangeMonitor.registerClassNameChange("repicea.stats.integral.GaussHermiteQuadrature", 
+				"repicea.math.integral.GaussHermiteQuadrature");
+		XmlSerializerChangeMonitor.registerClassNameChange("repicea.stats.integral.AbstractGaussQuadrature", 
+				"repicea.math.integral.AbstractGaussQuadrature");
+		XmlSerializerChangeMonitor.registerClassNameChange("repicea.stats.integral.AbstractGaussQuadrature$NumberOfPoints", 
+				"repicea.math.integral.AbstractGaussQuadrature$NumberOfPoints");
 	}
 
 
