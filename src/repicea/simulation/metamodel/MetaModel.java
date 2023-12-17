@@ -40,9 +40,9 @@ import repicea.io.FileUtility;
 import repicea.io.Saveable;
 import repicea.math.Matrix;
 import repicea.math.SymmetricMatrix;
+import repicea.serial.SerializerChangeMonitor;
 import repicea.serial.xml.XmlDeserializer;
 import repicea.serial.xml.XmlSerializer;
-import repicea.serial.xml.XmlSerializerChangeMonitor;
 import repicea.simulation.scriptapi.ScriptResult;
 import repicea.stats.StatisticalUtility;
 import repicea.stats.data.DataSet;
@@ -60,21 +60,21 @@ import repicea.util.REpiceaLogManager;
 public class MetaModel implements Saveable {
 		
 	static {
-		XmlSerializerChangeMonitor.registerClassNameChange("repicea.stats.mcmc.MetropolisHastingsParameters",
+		SerializerChangeMonitor.registerClassNameChange("repicea.stats.mcmc.MetropolisHastingsParameters",
 				"repicea.stats.estimators.mcmc.MetropolisHastingsParameters");
-		XmlSerializerChangeMonitor.registerClassNameChange("repicea.stats.mcmc.MetropolisHastingsAlgorithm",
+		SerializerChangeMonitor.registerClassNameChange("repicea.stats.mcmc.MetropolisHastingsAlgorithm",
 				"repicea.stats.estimators.mcmc.MetropolisHastingsAlgorithm");
-		XmlSerializerChangeMonitor.registerClassNameChange("repicea.stats.mcmc.MetropolisHastingsPriorHandler",
+		SerializerChangeMonitor.registerClassNameChange("repicea.stats.mcmc.MetropolisHastingsPriorHandler",
 				"repicea.stats.estimators.mcmc.MetropolisHastingsPriorHandler");
-		XmlSerializerChangeMonitor.registerClassNameChange("repicea.stats.mcmc.MetropolisHastingsSample",
+		SerializerChangeMonitor.registerClassNameChange("repicea.stats.mcmc.MetropolisHastingsSample",
 				"repicea.stats.estimators.mcmc.MetropolisHastingsSample");
-		XmlSerializerChangeMonitor.registerClassNameChange("repicea.simulation.metamodel.ScriptResult",
+		SerializerChangeMonitor.registerClassNameChange("repicea.simulation.metamodel.ScriptResult",
 				"repicea.simulation.scriptapi.ScriptResult");
-		XmlSerializerChangeMonitor.registerClassNameChange("repicea.stats.integral.GaussHermiteQuadrature", 
+		SerializerChangeMonitor.registerClassNameChange("repicea.stats.integral.GaussHermiteQuadrature", 
 				"repicea.math.integral.GaussHermiteQuadrature");
-		XmlSerializerChangeMonitor.registerClassNameChange("repicea.stats.integral.AbstractGaussQuadrature", 
+		SerializerChangeMonitor.registerClassNameChange("repicea.stats.integral.AbstractGaussQuadrature", 
 				"repicea.math.integral.AbstractGaussQuadrature");
-		XmlSerializerChangeMonitor.registerClassNameChange("repicea.stats.integral.AbstractGaussQuadrature$NumberOfPoints", 
+		SerializerChangeMonitor.registerClassNameChange("repicea.stats.integral.AbstractGaussQuadrature$NumberOfPoints", 
 				"repicea.math.integral.AbstractGaussQuadrature$NumberOfPoints");
 	}
 
@@ -136,10 +136,10 @@ public class MetaModel implements Saveable {
 		
 	
 	static {
-		repicea.serial.xml.XmlSerializerChangeMonitor.registerClassNameChange(
+		SerializerChangeMonitor.registerClassNameChange(
 				"repicea.simulation.metamodel.MetaModel$InnerModel",
 				"repicea.simulation.metamodel.RichardsChapmanModelWithRandomEffectImplementation");
-		repicea.serial.xml.XmlSerializerChangeMonitor.registerClassNameChange(
+		SerializerChangeMonitor.registerClassNameChange(
 				"repicea.simulation.metamodel.DataBlockWrapper",
 				"repicea.simulation.metamodel.RichardsChapmanModelWithRandomEffectImplementation$DataBlockWrapper");
 	}
