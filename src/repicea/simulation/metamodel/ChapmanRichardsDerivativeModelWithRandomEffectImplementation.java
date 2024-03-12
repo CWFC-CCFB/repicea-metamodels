@@ -27,6 +27,7 @@ import repicea.stats.data.StatisticalDataException;
 import repicea.stats.distributions.ContinuousDistribution;
 import repicea.stats.distributions.GaussianDistribution;
 import repicea.stats.distributions.UniformDistribution;
+import repicea.stats.estimators.mcmc.MetropolisHastingsPriorHandler;
 
 /**
  * An implementation of the derivative form of the Chapman-Richards model including random effects.
@@ -69,20 +70,6 @@ class ChapmanRichardsDerivativeModelWithRandomEffectImplementation extends Abstr
 		fixedEffectsParameterIndices.add(1);
 		fixedEffectsParameterIndices.add(2);
 
-		mh.getPriorHandler().addFixedEffectDistribution(new UniformDistribution(0, 2000), 0);
-		mh.getPriorHandler().addFixedEffectDistribution(new UniformDistribution(0.00001, 0.05), 1);
-		mh.getPriorHandler().addFixedEffectDistribution(new UniformDistribution(0.8, 6), 2);
-		mh.getPriorHandler().addFixedEffectDistribution(new UniformDistribution(0.80, 0.995), indexCorrelationParameter);
-		ContinuousDistribution variancePrior = new UniformDistribution(0, 15000);
-		mh.getPriorHandler().addFixedEffectDistribution(variancePrior, indexRandomEffectVariance);
-		if (!isVarianceErrorTermAvailable) {
-			ContinuousDistribution resVariancePrior = new UniformDistribution(0, 5000);
-			mh.getPriorHandler().addFixedEffectDistribution(resVariancePrior, indexResidualErrorVariance);
-		}
-		for (int i = 0; i < dataBlockWrappers.size(); i++) {
-			mh.getPriorHandler().addRandomEffectVariance(new GaussianDistribution(0, 1), variancePrior, indexFirstRandomEffect + i);
-		}
-		
 		Matrix varianceDiag = new Matrix(parmEst.m_iRows,1);
 		for (int i = 0; i < varianceDiag.m_iRows; i++) {
 			varianceDiag.setValueAt(i, 0, Math.pow(parmEst.getValueAt(i, 0) * coefVar, 2d));
@@ -148,6 +135,25 @@ class ChapmanRichardsDerivativeModelWithRandomEffectImplementation extends Abstr
 	@Override
 	public String getModelDefinition() {
 		return "y ~ (b1 + u_i)*exp(-b2*t)*(1-exp(-b2*t))^b3";
+	}
+
+
+	@Override
+	public void setPriorDistributions(MetropolisHastingsPriorHandler handler) {
+		handler.clear();
+		handler.addFixedEffectDistribution(new UniformDistribution(0, 2000), 0);
+		handler.addFixedEffectDistribution(new UniformDistribution(0.00001, 0.05), 1);
+		handler.addFixedEffectDistribution(new UniformDistribution(0.8, 6), 2);
+		handler.addFixedEffectDistribution(new UniformDistribution(0.80, 0.995), indexCorrelationParameter);
+		ContinuousDistribution variancePrior = new UniformDistribution(0, 15000);
+		handler.addFixedEffectDistribution(variancePrior, indexRandomEffectVariance);
+		if (!isVarianceErrorTermAvailable) {
+			ContinuousDistribution resVariancePrior = new UniformDistribution(0, 5000);
+			handler.addFixedEffectDistribution(resVariancePrior, indexResidualErrorVariance);
+		}
+		for (int i = 0; i < dataBlockWrappers.size(); i++) {
+			handler.addRandomEffectVariance(new GaussianDistribution(0, 1), variancePrior, indexFirstRandomEffect + i);
+		}
 	}
 
 }

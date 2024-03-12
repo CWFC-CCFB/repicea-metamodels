@@ -1,8 +1,10 @@
 /*
- * This file is part of the repicea-util library.
+ * This file is part of the repicea-metamodel library.
  *
- * Copyright (C) 2009-2021 Mathieu Fortin for Rouge Epicea.
- *
+ * Copyright (C) 2009-2019 Mathieu Fortin for Rouge Epicea.
+ * Copyright (C) 2020-2024 His Majesty the King in Right of Canada
+ * Author: Mathieu Fortin, Canadian Forest Service
+ * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -129,9 +131,9 @@ public class MetaModelTest {
 		List<String> vegPotList = new ArrayList<String>();
 //		vegPotList.add("MS2");
 //		vegPotList.add("RE1");
-//		vegPotList.add("RE2");
+		vegPotList.add("RE2");
 //		vegPotList.add("RE3");
-		vegPotList.add("RS2");
+//		vegPotList.add("RS2");
 //		vegPotList.add("RS3");
 		
 		List<String> outputTypes = new ArrayList<String>();
@@ -141,9 +143,9 @@ public class MetaModelTest {
 			String metaModelFilename = path + "QC_FMU02664_" + vegPot + "_NoChange_root.zml";
 			for (String outputType : outputTypes) {
 				MetaModel m = MetaModel.Load(metaModelFilename);
-				m.mhSimParms.nbInitialGrid = 50000;
-				m.mhSimParms.nbBurnIn = 20000;
-				m.mhSimParms.nbRealizations = 1000000 + m.mhSimParms.nbBurnIn;
+				m.mhSimParms.nbInitialGrid = 10000;
+				m.mhSimParms.nbBurnIn = 10000;
+				m.mhSimParms.nbAcceptedRealizations = 500000 + m.mhSimParms.nbBurnIn;
 				boolean enabledMixedModelImplementation = vegPot.equals("RE1") ? false : true;
 				m.fitModel(outputType, enabledMixedModelImplementation);
 //				UNCOMMENT THIS LINE TO UPDATE THE META MODELS

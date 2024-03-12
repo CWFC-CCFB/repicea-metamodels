@@ -27,6 +27,7 @@ import repicea.stats.data.StatisticalDataException;
 import repicea.stats.distributions.ContinuousDistribution;
 import repicea.stats.distributions.GaussianDistribution;
 import repicea.stats.distributions.UniformDistribution;
+import repicea.stats.estimators.mcmc.MetropolisHastingsPriorHandler;
 
 /**
  * An implementation of the Chapman-Richards model.
@@ -77,16 +78,6 @@ class ChapmanRichardsModelImplementation extends AbstractModelImplementation {
 			parmEst.setValueAt(indexResidualErrorVariance, 0, 250d);
 		}
 
-
-		mh.getPriorHandler().addFixedEffectDistribution(new UniformDistribution(0, 400), 0);
-		mh.getPriorHandler().addFixedEffectDistribution(new UniformDistribution(0.0001, 0.1), 1);
-		mh.getPriorHandler().addFixedEffectDistribution(new UniformDistribution(1, 6), 2);
-		mh.getPriorHandler().addFixedEffectDistribution(new UniformDistribution(0.80, 0.995), indexCorrelationParameter);
-		if (!isVarianceErrorTermAvailable) {
-			ContinuousDistribution resVariancePrior = new UniformDistribution(0, 5000);
-			mh.getPriorHandler().addFixedEffectDistribution(resVariancePrior, indexResidualErrorVariance);
-		}
-
 		Matrix varianceDiag = new Matrix(parmEst.m_iRows,1);
 		for (int i = 0; i < varianceDiag.m_iRows; i++) {
 			varianceDiag.setValueAt(i, 0, Math.pow(parmEst.getValueAt(i, 0) * coefVar, 2d));
@@ -133,6 +124,20 @@ class ChapmanRichardsModelImplementation extends AbstractModelImplementation {
 	@Override
 	public String getModelDefinition() {
 		return "y ~ b1*(1-exp(-b2*t))^b3";
+	}
+
+
+	@Override
+	public void setPriorDistributions(MetropolisHastingsPriorHandler handler) {
+		handler.clear();
+		handler.addFixedEffectDistribution(new UniformDistribution(0, 400), 0);
+		handler.addFixedEffectDistribution(new UniformDistribution(0.0001, 0.1), 1);
+		handler.addFixedEffectDistribution(new UniformDistribution(1, 6), 2);
+		handler.addFixedEffectDistribution(new UniformDistribution(0.80, 0.995), indexCorrelationParameter);
+		if (!isVarianceErrorTermAvailable) {
+			ContinuousDistribution resVariancePrior = new UniformDistribution(0, 5000);
+			handler.addFixedEffectDistribution(resVariancePrior, indexResidualErrorVariance);
+		}
 	}
 
 }

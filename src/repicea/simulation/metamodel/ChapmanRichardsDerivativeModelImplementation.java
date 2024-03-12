@@ -27,6 +27,7 @@ import repicea.stats.data.StatisticalDataException;
 import repicea.stats.distributions.ContinuousDistribution;
 import repicea.stats.distributions.GaussianDistribution;
 import repicea.stats.distributions.UniformDistribution;
+import repicea.stats.estimators.mcmc.MetropolisHastingsPriorHandler;
 
 /**
  * An implementation of the derivative form of the Chapman-Richards model.
@@ -72,15 +73,6 @@ class ChapmanRichardsDerivativeModelImplementation extends AbstractModelImplemen
 		parmEst.setValueAt(indexCorrelationParameter, 0, .92);
 		if (!isVarianceErrorTermAvailable) {
 			parmEst.setValueAt(indexResidualErrorVariance, 0, 250d);
-		}
-
-		mh.getPriorHandler().addFixedEffectDistribution(new UniformDistribution(0, 2000), 0);
-		mh.getPriorHandler().addFixedEffectDistribution(new UniformDistribution(0.00001, 0.05), 1);
-		mh.getPriorHandler().addFixedEffectDistribution(new UniformDistribution(0.8, 6), 2);
-		mh.getPriorHandler().addFixedEffectDistribution(new UniformDistribution(0.80, 0.995), indexCorrelationParameter);
-		if (!isVarianceErrorTermAvailable) {
-			ContinuousDistribution resVariancePrior = new UniformDistribution(0, 5000);
-			mh.getPriorHandler().addFixedEffectDistribution(resVariancePrior, indexResidualErrorVariance);
 		}
 
 		Matrix varianceDiag = new Matrix(parmEst.m_iRows,1);
@@ -130,6 +122,19 @@ class ChapmanRichardsDerivativeModelImplementation extends AbstractModelImplemen
 	@Override
 	public String getModelDefinition() {
 		return "y ~ b1*exp(-b2*t)*(1-exp(-b2*t))^b3";
+	}
+
+	@Override
+	public void setPriorDistributions(MetropolisHastingsPriorHandler handler) {
+		handler.clear();
+		handler.addFixedEffectDistribution(new UniformDistribution(0, 2000), 0);
+		handler.addFixedEffectDistribution(new UniformDistribution(0.00001, 0.05), 1);
+		handler.addFixedEffectDistribution(new UniformDistribution(0.8, 6), 2);
+		handler.addFixedEffectDistribution(new UniformDistribution(0.80, 0.995), indexCorrelationParameter);
+		if (!isVarianceErrorTermAvailable) {
+			ContinuousDistribution resVariancePrior = new UniformDistribution(0, 5000);
+			handler.addFixedEffectDistribution(resVariancePrior, indexResidualErrorVariance);
+		}
 	}
 
 }
