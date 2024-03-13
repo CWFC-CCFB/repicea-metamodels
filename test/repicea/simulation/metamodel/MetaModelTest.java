@@ -131,9 +131,9 @@ public class MetaModelTest {
 		List<String> vegPotList = new ArrayList<String>();
 //		vegPotList.add("MS2");
 //		vegPotList.add("RE1");
-		vegPotList.add("RE2");
+//		vegPotList.add("RE2");
 //		vegPotList.add("RE3");
-//		vegPotList.add("RS2");
+		vegPotList.add("RS2");
 //		vegPotList.add("RS3");
 		
 		List<String> outputTypes = new ArrayList<String>();
@@ -144,8 +144,8 @@ public class MetaModelTest {
 			for (String outputType : outputTypes) {
 				MetaModel m = MetaModel.Load(metaModelFilename);
 				m.mhSimParms.nbInitialGrid = 10000;
-				m.mhSimParms.nbBurnIn = 10000;
-				m.mhSimParms.nbAcceptedRealizations = 500000 + m.mhSimParms.nbBurnIn;
+				m.mhSimParms.nbBurnIn = 100000;
+				m.mhSimParms.nbAcceptedRealizations = 1000000 + m.mhSimParms.nbBurnIn;
 				boolean enabledMixedModelImplementation = vegPot.equals("RE1") ? false : true;
 				m.fitModel(outputType, enabledMixedModelImplementation);
 //				UNCOMMENT THIS LINE TO UPDATE THE META MODELS
