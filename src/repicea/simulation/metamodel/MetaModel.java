@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -444,7 +443,7 @@ public class MetaModel implements Saveable {
 	
 	
 	/**
-	 * Provide multiple predictions and associated variance using the model parameters  
+	 * Provide deterministic predictions and associated variance using the model parameters  
 	 * 
 	 * @param ageYr An array of all ageYrs for which the predictions are to be computed                   
 	 * @param timeSinceInitialDateYr The number of years since initial date year for the predictions
@@ -453,22 +452,25 @@ public class MetaModel implements Saveable {
 	 * 			PARAMEST returns simple variance for parameter estimates
 	 * 			PARAMESTRE returns variance for parameter estimates including random effect on variance
 	 * 			 
-	 * @return the predictions two different maps : one for PREDICTIONS and one for PREDICTION_VARIANCE
+	 * @return the predictions in a DataSet instance which has three columns (AgeYr, Pred, Variance). If the varianceOutputType 
+	 * is set to NONE, the DataSet instance does not include the last column.
 	 * @throws MetaModelException if the meta-model has not converged
 	 */
-	public LinkedHashMap<String, LinkedHashMap<Integer, Double>> getPredictions(int[] ageYr, int timeSinceInitialDateYr, PredictionVarianceOutputType varianceOutputType) throws MetaModelException {
-		LinkedHashMap<String, LinkedHashMap<Integer, Double>> result = new LinkedHashMap<String, LinkedHashMap<Integer, Double>>();
-		result.put(PREDICTIONS, getMonteCarloPredictions(ageYr, timeSinceInitialDateYr, 0, 0).get(0).get(0));
-		if (varianceOutputType != PredictionVarianceOutputType.NONE) {
-			LinkedHashMap<Integer, Double> variance = new LinkedHashMap<Integer, Double>(ageYr.length);
-			for (int k = 0; k < ageYr.length; k++) {
-				variance.put(ageYr[k], getPredictionVariance(ageYr[k], timeSinceInitialDateYr, varianceOutputType == PredictionVarianceOutputType.PARAMESTRE));
+	public DataSet getPredictions(int[] ageYr, int timeSinceInitialDateYr, PredictionVarianceOutputType varianceOutputType) throws MetaModelException {
+		boolean includeVariance = varianceOutputType != PredictionVarianceOutputType.NONE; 
+		DataSet ds = includeVariance ? 
+				new DataSet(Arrays.asList(new String[] {"AgeYr", "Pred", "Variance"})) :
+					new DataSet(Arrays.asList(new String[] {"AgeYr", "Pred"}));
+		for (int k = 0; k < ageYr.length; k++) {
+			double pred = this.getPrediction(ageYr[k], timeSinceInitialDateYr);
+			if (includeVariance) {
+				double variance  = getPredictionVariance(ageYr[k], timeSinceInitialDateYr, varianceOutputType == PredictionVarianceOutputType.PARAMESTRE);
+				ds.addObservation(new Object[] {ageYr[k], pred, variance});
+			} else {
+				ds.addObservation(new Object[] {ageYr[k], pred});
 			}
-			
-			result.put(PREDICTION_VARIANCE, variance);
 		}
-		
-		return result;
+		return ds;
 	}
 	
 	/**
@@ -479,10 +481,10 @@ public class MetaModel implements Saveable {
 	 * @param nbSubjects The number of subjects to generate random parameters for  (use 0 to disable MC simulation) 
 	 * @param nbRealizations The number of realizations to generate random parameters for (use 0 to disable MC simulation)
 	 * 			 
-	 * @return the predictions two different maps : one for PREDICTIONS and one for PREDICTION_VARIANCE
+	 * @return a DataSet with four columns (RealizationID, SubjectID, AgeYr, Pred)
 	 * @throws MetaModelException if the meta-model has not converged
 	 */	
-	public LinkedHashMap<Integer, LinkedHashMap<Integer, LinkedHashMap<Integer, Double>>> getMonteCarloPredictions(int[] ageYr, int timeSinceInitialDateYr, int nbSubjects, int nbRealizations) throws MetaModelException {
+	public DataSet getMonteCarloPredictions(int[] ageYr, int timeSinceInitialDateYr, int nbSubjects, int nbRealizations) throws MetaModelException {
 		if (hasConverged()) {
 			boolean randomEffectVariabilityEnabled = nbSubjects > 0;
 			boolean parameterVariabilityEnabled = nbRealizations > 0;
@@ -499,26 +501,21 @@ public class MetaModel implements Saveable {
 				
 			int ns = randomEffectVariabilityEnabled ? nbSubjects : 1;
 			int nr = parameterVariabilityEnabled ? nbRealizations : 1;
-			LinkedHashMap<Integer, LinkedHashMap<Integer, LinkedHashMap<Integer, Double>>> result = new LinkedHashMap<Integer, LinkedHashMap<Integer, LinkedHashMap<Integer, Double>>>();
+			DataSet ds = new DataSet(Arrays.asList(new String[] {"RealizationID", "SubjectID", "AgeYr", "Pred"}));
+			
 			for (int i = 0; i < nr; i++) {
-				result.put(i, new LinkedHashMap<Integer, LinkedHashMap<Integer, Double>>());
 				for (int j = 0; j < ns; j++) {
-					result.get(i).put(j, new LinkedHashMap<Integer, Double>());
 					double rj = randomEffectVariabilityEnabled ? StatisticalUtility.getRandom().nextGaussian() * stdRandomEffect: 0.0;
 					for (int k = 0; k < ageYr.length; k++) {						
-						double pred = model.getPrediction(ageYr[k], 
-								timeSinceInitialDateYr, 
-								rj, 
-								parameterVariabilityEnabled ? parmDeviates.get(i) : getFinalParameterEstimates());
-								
-						result.get(i).get(j).put(ageYr[k], pred);
+						double pred = model.getPrediction(ageYr[k], timeSinceInitialDateYr, rj, parameterVariabilityEnabled ? parmDeviates.get(i) : getFinalParameterEstimates());
+						ds.addObservation(new Object[] {i, j , ageYr[k], pred});
 					}
 				}
 			}
 			
 			lastAccessed = LocalDateTime.now();
 						
-			return result;
+			return ds;
 		} else {
 			throw new MetaModelException("The meta-model has not converged or has not been fitted yet!");
 		}
@@ -588,6 +585,15 @@ public class MetaModel implements Saveable {
 	 */
 	void exportMetropolisHastingsSample(String filename) throws IOException {
 		model.mh.exportMetropolisHastingsSample(filename);
+	}
+	
+	/**
+	 * Call the same method on the MetropolisHastingsAlgorithm instance.
+	 * @return a DataSet instance
+	 * @see repicea.stats.estimators.mcmc.MetropolisHastingsAlgorithm#convertMetropolisHastingsSampleToDataSet()
+	 */
+	public DataSet convertMetropolisHastingsSampleToDataSet() {
+		return model.mh.convertMetropolisHastingsSampleToDataSet();
 	}
 
 	/**
@@ -710,4 +716,13 @@ public class MetaModel implements Saveable {
 		String newFilename = originalFilename.substring(0, originalFilename.lastIndexOf(".")) + "_light" + originalFilename.substring(originalFilename.lastIndexOf("."));
 		return newFilename;
 	}
+	
+	/**
+	 * Accessor to the parameters of the Metropolis-Hastings algorithm.
+	 * @return a MetropolisHastingsParameters instance
+	 */
+	public MetropolisHastingsParameters getMetropolisHastingsParameters() {
+		return mhSimParms;
+	}
+	
 }
