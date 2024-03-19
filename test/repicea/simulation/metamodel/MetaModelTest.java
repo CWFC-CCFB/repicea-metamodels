@@ -35,6 +35,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import repicea.serial.SerializerChangeMonitor;
+import repicea.stats.data.DataSet;
 import repicea.util.ObjectUtility;
 import repicea.util.REpiceaLogManager;
 import repicea.util.REpiceaTranslator;
@@ -110,6 +111,15 @@ public class MetaModelTest {
 	public void testingMetaModelPrediction() throws Exception {
 		double pred = MetaModelInstance.getPrediction(90, 0);
 		Assert.assertEquals("Testing prediction at 90 yrs of age", 104.26481827545614, pred, 1E-8);
+	}
+
+	@Test
+	public void testingMetaModelMCPredictionWithNoVaribility() throws Exception {
+		DataSet pred = MetaModelInstance.getMonteCarloPredictions(new int[] {0,10,20,30}, 0, 0, 0);
+		Assert.assertEquals("Testing prediction at t0", 0d, (double) pred.getValueAt(0, "Pred"), 1E-8);
+		Assert.assertEquals("Testing prediction at t10", 4.1785060702519825, (double) pred.getValueAt(1, "Pred"), 1E-8);
+		Assert.assertEquals("Testing prediction at t20", 14.499085383998823, (double) pred.getValueAt(2, "Pred"), 1E-8);
+		Assert.assertEquals("Testing prediction at t30", 28.161390838930085 , (double) pred.getValueAt(3, "Pred"), 1E-8);
 	}
 
 	public static void main(String[] args) throws IOException, MetaModelException {
