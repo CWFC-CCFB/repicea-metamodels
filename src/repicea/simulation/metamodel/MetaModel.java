@@ -1,7 +1,8 @@
 /*
  * This file is part of the repicea-metamodels library.
  *
- * Copyright (C) 2009-2021 Mathieu Fortin for Rouge Epicea.
+ * Copyright (C) 2021-2024 His Majesty the King in right of Canada
+ * Author: Mathieu Fortin, Canadian Forest Service
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,7 +17,6 @@
  *
  * Please see the license at http://www.gnu.org/copyleft/lesser.html.
  */
-
 package repicea.simulation.metamodel;
 
 import java.io.FileOutputStream;
@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,6 +43,7 @@ import repicea.math.SymmetricMatrix;
 import repicea.serial.SerializerChangeMonitor;
 import repicea.serial.xml.XmlDeserializer;
 import repicea.serial.xml.XmlSerializer;
+import repicea.simulation.metamodel.ParametersMapUtilities.InputParametersMapKey;
 import repicea.simulation.scriptapi.ScriptResult;
 import repicea.stats.StatisticalUtility;
 import repicea.stats.data.DataSet;
@@ -143,9 +145,20 @@ public class MetaModel implements Saveable {
 				"repicea.simulation.metamodel.RichardsChapmanModelWithRandomEffectImplementation$DataBlockWrapper");
 	}
 
-
+	/**
+	 * An enum constant that stands for the meta-model implementation.<p>
+	 * Current implementations are:
+	 * <ul>
+	 * <li> ChapmanRichards
+	 * <li> ChapmanRichardsWithRandomEffect
+	 * <li> ChapmanRichardsDerivative
+	 * <li> ChapmanRichardsDerivativeWithRandomEffect
+	 * </ul>
+	 */
 	public static enum ModelImplEnum {
-		ChapmanRichards(true), ChapmanRichardsWithRandomEffect(false), ChapmanRichardsDerivative(true),
+		ChapmanRichards(true), 
+		ChapmanRichardsWithRandomEffect(false), 
+		ChapmanRichardsDerivative(true),
 		ChapmanRichardsDerivativeWithRandomEffect(false);
 
 		private static List<ModelImplEnum> ModelsWithoutRandomEffects;
@@ -185,19 +198,6 @@ public class MetaModel implements Saveable {
 
 	}
 
-	protected MetropolisHastingsParameters mhSimParms;
-	protected final Map<Integer, ScriptResult> scriptResults;
-	protected AbstractModelImplementation model;
-	private final String stratumGroup;
-	private DataSet modelComparison;
-	protected final String geoDomain;
-	protected final String dataSource;
-	public Date lastFitTimeStamp;
-	private transient GaussianEstimate parameterEstimateGenerator;
-	public static final String PREDICTIONS = "predictions";
-	public static final String PREDICTION_VARIANCE = "predictionVariance";
-	private transient LocalDateTime lastAccessed;	// the last datetime at which this metamodel was accessed (used in cache management in CFSStandGrowth) 
-	
 	public enum PredictionVarianceOutputType {
 		/**
 		 * No variance output
@@ -213,6 +213,24 @@ public class MetaModel implements Saveable {
 		PARAMESTRE,
 	}
 
+	
+	
+	protected MetropolisHastingsParameters mhSimParms;
+	protected final Map<Integer, ScriptResult> scriptResults;
+	protected AbstractModelImplementation model;
+	private final String stratumGroup;
+	private DataSet modelComparison;
+	protected final String geoDomain;
+	protected final String dataSource;
+	public Date lastFitTimeStamp;
+	private transient GaussianEstimate parameterEstimateGenerator;
+	public static final String PREDICTIONS = "predictions";
+	public static final String PREDICTION_VARIANCE = "predictionVariance";
+	private transient LocalDateTime lastAccessed;	// the last datetime at which this metamodel was accessed (used in cache management in CFSStandGrowth) 
+	
+
+	private Map<ModelImplEnum, LinkedHashMap<String, Object>[]> parametersMap;
+	
 	/**
 	 * Constructor.
 	 * @param stratumGroup a String representing the stratum group
@@ -228,6 +246,28 @@ public class MetaModel implements Saveable {
 		setDefaultSettings();
 	}
 
+	
+	Map<ModelImplEnum, LinkedHashMap<String, Object>[]> getParametersMap() {
+		if (parametersMap == null ) {
+			parametersMap = new HashMap<ModelImplEnum, LinkedHashMap<String, Object>[]>();
+		}
+		return parametersMap;
+	}
+
+	/**
+	 * Define the starting values and prior distributions of parameters for a particular 
+	 * model implementation. <p>
+	 * If the parms argument is set to null, the parameters are reset to their default values.
+	 * 
+	 * @param modelImpl a ModelImplEnum constant that stands for the model implementation
+	 * @param parms a LinkedHashMap whose keys are the names of the InputParametersMapKey enum constants
+	 * with values of appropriate types
+	 * @see InputParametersMapKey
+	 */
+	public void setStartingValuesForThisModelImplementation(ModelImplEnum modelImpl, LinkedHashMap<String, Object>[] parms) {
+		getParametersMap().put(modelImpl, parms);
+	}
+	
 	private void setDefaultSettings() {
 		mhSimParms = new MetropolisHastingsParameters();
 	}
@@ -565,11 +605,7 @@ public class MetaModel implements Saveable {
 	 * @return a String
 	 */
 	public String getSelectedOutputType() {
-		if (model != null) {
-			return model.getSelectedOutputType();
-		} else {
-			return "";
-		}
+		return model != null ? model.getSelectedOutputType() : "";
 	}
 
 	/**
@@ -723,6 +759,25 @@ public class MetaModel implements Saveable {
 	 */
 	public MetropolisHastingsParameters getMetropolisHastingsParameters() {
 		return mhSimParms;
+	}
+	
+
+	/**
+	 * Convert parameters into a proper LinkedHashMap instance. <p>
+	 * The parameters are expected to come in the order of the InputParametersMapKey enum.
+	 * @param record an array of objects
+	 * @return a LinkedHashMap instance
+	 * @see InputParametersMapKey
+	 */
+	public static LinkedHashMap<String,Object> convertParameters(Object[] record) {
+		if (record.length != InputParametersMapKey.values().length) {
+			throw new InvalidParameterException("The length of the record is supposed to be " + InputParametersMapKey.values().length + "!");
+		}
+		LinkedHashMap<String,Object> oMap = new LinkedHashMap<String,Object>();
+		for (InputParametersMapKey key : InputParametersMapKey.values()) {
+			oMap.put(key.name(), record[key.ordinal()]);
+		}
+		return oMap;
 	}
 	
 }
