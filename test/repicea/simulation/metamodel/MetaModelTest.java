@@ -163,7 +163,6 @@ public class MetaModelTest {
 			String metaModelFilename = path + "QC_FMU02664_" + vegPot + "_NoChange_root.zml";
 			for (String outputType : outputTypes) {
 				MetaModel m = MetaModel.Load(metaModelFilename);
-				Object a = m.getPossibleOutputTypes();
 				m.setStartingValuesForThisModelImplementation(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect, parms);
 				m.mhSimParms.nbInitialGrid = 0;
 				m.mhSimParms.nbBurnIn = 50000;

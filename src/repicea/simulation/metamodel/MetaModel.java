@@ -41,12 +41,14 @@ import repicea.io.Saveable;
 import repicea.math.Matrix;
 import repicea.math.SymmetricMatrix;
 import repicea.serial.SerializerChangeMonitor;
+import repicea.serial.xml.PostXmlUnmarshalling;
 import repicea.serial.xml.XmlDeserializer;
 import repicea.serial.xml.XmlSerializer;
 import repicea.simulation.metamodel.ParametersMapUtilities.InputParametersMapKey;
 import repicea.simulation.scriptapi.ScriptResult;
 import repicea.stats.StatisticalUtility;
 import repicea.stats.data.DataSet;
+import repicea.stats.data.Observation;
 import repicea.stats.data.StatisticalDataException;
 import repicea.stats.estimates.GaussianEstimate;
 import repicea.stats.estimators.mcmc.MetropolisHastingsParameters;
@@ -58,7 +60,7 @@ import repicea.util.REpiceaLogManager;
  * 
  * @author Mathieu Fortin - December 2020
  */
-public class MetaModel implements Saveable {
+public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		
 	static {
 		SerializerChangeMonitor.registerClassNameChange("repicea.stats.mcmc.MetropolisHastingsParameters",
@@ -79,11 +81,11 @@ public class MetaModel implements Saveable {
 				"repicea.math.integral.AbstractGaussQuadrature$NumberOfPoints");
 	}
 
+	private final String StratumAgeStr = "StratumAgeYr";
 
 	public class MetaDataHelper {
 
-		public MetaDataHelper() {
-		}
+		public MetaDataHelper() {}
 
 		public MetaModelMetaData generate() {
 
@@ -104,7 +106,6 @@ public class MetaModel implements Saveable {
 					if (firstElement) {
 						// fill in data that is constant 	
 						data.growth.nbRealizations = result.getNbRealizations();
-//						data.growth.climateChangeOption = ((Enum<?>)result.climateChangeScenario).name();
 						data.growth.climateChangeOption = result.getClimateChangeScenario();
 						data.growth.growthModel = result.getGrowthModel();							
 					}
@@ -317,6 +318,7 @@ public class MetaModel implements Saveable {
 			}
 		}
 		if (canBeAdded) {
+			addStratumAgeFieldToInnerDataSet(result.getDataSet(), initialAge);
 			scriptResults.put(initialAge, result);
 			model = null; // so that convergence is set to false by default	
 		} else {
@@ -577,15 +579,6 @@ public class MetaModel implements Saveable {
 		return model.getParameters();
 	}
 
-//	/**
-//	 * Export the initial data set (before fitting the meta-model).
-//	 * @param filename
-//	 * @throws Exception
-//	 */
-//	public void exportInitialDataSet(String filename) throws Exception {
-//		getDataStructureReady().getDataSet().save(filename);
-//	}
-
 	/**
 	 * Export a final dataset, that is the initial data set plus the meta-model
 	 * predictions.<p>
@@ -727,6 +720,25 @@ public class MetaModel implements Saveable {
 	}
 
 	/**
+	 * Compile all the script results into a DataSet instance.
+	 * @return a DataSet instance
+	 */
+	public DataSet convertScriptResultsIntoDataSet() {
+		DataSet ds = null;
+		for (Integer ageYr : scriptResults.keySet()) {
+			ScriptResult sr = scriptResults.get(ageYr);
+			DataSet innerDataSet = sr.getDataSet();
+			if (ds == null) {
+				ds = new DataSet(innerDataSet.getFieldNames());
+			}
+			for (Observation o : innerDataSet.getObservations()) {
+				ds.addObservation(o.toArray());
+			}
+		}
+		return ds;
+	}
+	
+	/**
 	 * Save a lighter version of a previously serialized meta-model. <p>
 	 * This lighter version drops the final sample selection for a lighter deserialization.
 	 * 
@@ -779,5 +791,29 @@ public class MetaModel implements Saveable {
 		}
 		return oMap;
 	}
+
+	private void addStratumAgeFieldToInnerDataSet(DataSet innerDataset, int stratumAgeYr) {
+		Object[] stratumAgeFieldValues = new Object[innerDataset.getNumberOfObservations()];
+		for (int i = 0; i < stratumAgeFieldValues.length; i++) {
+			stratumAgeFieldValues[i] = stratumAgeYr;
+		}
+		innerDataset.addField(StratumAgeStr, stratumAgeFieldValues);
+		innerDataset.indexFieldType();
+	}
+	
+	@Override
+	public void postUnmarshallingAction() {
+		if (scriptResults != null) {
+			for (Integer stratumAgeYr : scriptResults.keySet()) {
+				ScriptResult sr = scriptResults.get(stratumAgeYr);
+				DataSet innerDataset = sr.getDataSet();
+				if (!innerDataset.getFieldNames().contains(StratumAgeStr)) {
+					addStratumAgeFieldToInnerDataSet(innerDataset, stratumAgeYr);
+				}
+			}
+		}
+	}
+	
+	
 	
 }
