@@ -29,6 +29,7 @@ import java.util.Map;
 import repicea.math.Matrix;
 import repicea.math.SymmetricMatrix;
 import repicea.simulation.metamodel.MetaModel.ModelImplEnum;
+import repicea.simulation.metamodel.ParametersMapUtilities.FormattedParametersMapKey;
 import repicea.simulation.scriptapi.ScriptResult;
 import repicea.stats.StatisticalUtility;
 import repicea.stats.StatisticalUtility.TypeMatrixR;
@@ -38,9 +39,11 @@ import repicea.stats.data.GenericHierarchicalStatisticalDataStructure;
 import repicea.stats.data.HierarchicalStatisticalDataStructure;
 import repicea.stats.data.Observation;
 import repicea.stats.data.StatisticalDataException;
+import repicea.stats.distributions.ContinuousDistribution;
 import repicea.stats.distributions.GaussianDistribution;
 import repicea.stats.estimators.mcmc.MetropolisHastingsAlgorithm;
 import repicea.stats.estimators.mcmc.MetropolisHastingsCompatibleModel;
+import repicea.stats.estimators.mcmc.MetropolisHastingsPriorHandler;
 import repicea.stats.model.StatisticalModel;
 
 /**
@@ -133,7 +136,8 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	protected int indexResidualErrorVariance;
 	private DataSet finalDataSet;
 	protected final boolean isVarianceErrorTermAvailable;
-	
+	protected final Map<String, Map<FormattedParametersMapKey, Object>> parametersMap; 
+
 	/**
 	 * Internal constructor.
 	 * @param outputType the desired outputType to be modelled
@@ -181,16 +185,15 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		finalDataSet = structure.getDataSet();
 		mh = new MetropolisHastingsAlgorithm(this, MetaModelManager.LoggerName, getLogMessagePrefix());
 		mh.setSimulationParameters(metaModel.mhSimParms);
+		
+		LinkedHashMap<String, Object>[] unformattedMap = metaModel.getParametersMap().containsKey(getModelImplementation()) && metaModel.getParametersMap().get(getModelImplementation()) != null ?
+				metaModel.getParametersMap().get(getModelImplementation()) :
+					getDefaultParameters();
+		parametersMap = ParametersMapUtilities.formatParametersMap(unformattedMap, getParameterNames());
 	}
 
-//	private Map<String, Integer> getNbPlotsMap(Map<Integer, ScriptResult> scriptResults) {
-//		Map<String, Integer> nbPlotsMap = new HashMap<String, Integer>();
-//		for (Integer age : scriptResults.keySet()) {
-//			int nbPlots = scriptResults.get(age).nbPlots;
-//			nbPlotsMap.put(age.toString(), nbPlots);
-//		}
-//		return nbPlotsMap;
-//	}
+	abstract LinkedHashMap<String, Object>[] getDefaultParameters();
+	abstract List<String> getParameterNames();
 
 	protected final AbstractDataBlockWrapper createWrapper(String k, 
 			List<Integer> indices, 
@@ -220,8 +223,32 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		return mu;
 	}
 
+	@Override
+	public void setPriorDistributions(MetropolisHastingsPriorHandler handler) {
+		handler.clear();
+		setPriorsFromParametersMap(handler);
+	}
+	
 	protected final ModelImplEnum getModelImplementation() {
 		return EnumMap.get(getClass());
+	}
+	
+	protected final void setFixedEffectStartingValuesFromParametersMap(Matrix parmEst) {
+		for (String paramName : getParameterNames()) {
+			int index = getParameterNames().indexOf(paramName);
+			if (index != indexResidualErrorVariance || !isVarianceErrorTermAvailable) {
+				parmEst.setValueAt(index, 0, (Double) parametersMap.get(paramName).get(FormattedParametersMapKey.StartingValue));
+			} 
+		}
+	}
+	
+	protected final void setPriorsFromParametersMap(MetropolisHastingsPriorHandler handler) {
+		for (String paramName : getParameterNames()) {
+			int index = getParameterNames().indexOf(paramName);
+			if (index != indexResidualErrorVariance || !isVarianceErrorTermAvailable) {
+				handler.addFixedEffectDistribution((ContinuousDistribution) parametersMap.get(paramName).get(FormattedParametersMapKey.PriorDistribution), index);
+			}
+		}
 	}
 
 	@Override

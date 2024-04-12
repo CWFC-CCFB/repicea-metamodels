@@ -1,7 +1,8 @@
 /*
  * This file is part of the repicea-metamodels library.
  *
- * Copyright (C) 2009-2021 Mathieu Fortin for Rouge Epicea.
+ * Copyright (C) 2021-2024 His Majesty the King in right of Canada
+ * Author: Mathieu Fortin, Canadian Forest Service
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,11 +17,11 @@
  *
  * Please see the license at http://www.gnu.org/copyleft/lesser.html.
  */
-
 package repicea.simulation.metamodel;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.security.InvalidParameterException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -28,11 +29,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
+import com.cedarsoftware.util.io.JsonReader;
 import com.cedarsoftware.util.io.JsonWriter;
 
 import repicea.io.FileUtility;
@@ -40,11 +43,14 @@ import repicea.io.Saveable;
 import repicea.math.Matrix;
 import repicea.math.SymmetricMatrix;
 import repicea.serial.SerializerChangeMonitor;
+import repicea.serial.xml.PostXmlUnmarshalling;
 import repicea.serial.xml.XmlDeserializer;
 import repicea.serial.xml.XmlSerializer;
+import repicea.simulation.metamodel.ParametersMapUtilities.InputParametersMapKey;
 import repicea.simulation.scriptapi.ScriptResult;
 import repicea.stats.StatisticalUtility;
 import repicea.stats.data.DataSet;
+import repicea.stats.data.Observation;
 import repicea.stats.data.StatisticalDataException;
 import repicea.stats.estimates.GaussianEstimate;
 import repicea.stats.estimators.mcmc.MetropolisHastingsParameters;
@@ -56,7 +62,7 @@ import repicea.util.REpiceaLogManager;
  * 
  * @author Mathieu Fortin - December 2020
  */
-public class MetaModel implements Saveable {
+public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		
 	static {
 		SerializerChangeMonitor.registerClassNameChange("repicea.stats.mcmc.MetropolisHastingsParameters",
@@ -77,11 +83,11 @@ public class MetaModel implements Saveable {
 				"repicea.math.integral.AbstractGaussQuadrature$NumberOfPoints");
 	}
 
+	static final String STRATUM_AGE_STR = "StratumAgeYr";
 
 	public class MetaDataHelper {
 
-		public MetaDataHelper() {
-		}
+		public MetaDataHelper() {}
 
 		public MetaModelMetaData generate() {
 
@@ -102,7 +108,6 @@ public class MetaModel implements Saveable {
 					if (firstElement) {
 						// fill in data that is constant 	
 						data.growth.nbRealizations = result.getNbRealizations();
-//						data.growth.climateChangeOption = ((Enum<?>)result.climateChangeScenario).name();
 						data.growth.climateChangeOption = result.getClimateChangeScenario();
 						data.growth.growthModel = result.getGrowthModel();							
 					}
@@ -143,9 +148,20 @@ public class MetaModel implements Saveable {
 				"repicea.simulation.metamodel.RichardsChapmanModelWithRandomEffectImplementation$DataBlockWrapper");
 	}
 
-
+	/**
+	 * An enum constant that stands for the meta-model implementation.<p>
+	 * Current implementations are:
+	 * <ul>
+	 * <li> ChapmanRichards
+	 * <li> ChapmanRichardsWithRandomEffect
+	 * <li> ChapmanRichardsDerivative
+	 * <li> ChapmanRichardsDerivativeWithRandomEffect
+	 * </ul>
+	 */
 	public static enum ModelImplEnum {
-		ChapmanRichards(true), ChapmanRichardsWithRandomEffect(false), ChapmanRichardsDerivative(true),
+		ChapmanRichards(true), 
+		ChapmanRichardsWithRandomEffect(false), 
+		ChapmanRichardsDerivative(true),
 		ChapmanRichardsDerivativeWithRandomEffect(false);
 
 		private static List<ModelImplEnum> ModelsWithoutRandomEffects;
@@ -185,19 +201,6 @@ public class MetaModel implements Saveable {
 
 	}
 
-	protected MetropolisHastingsParameters mhSimParms;
-	protected final Map<Integer, ScriptResult> scriptResults;
-	protected AbstractModelImplementation model;
-	private final String stratumGroup;
-	private DataSet modelComparison;
-	protected final String geoDomain;
-	protected final String dataSource;
-	public Date lastFitTimeStamp;
-	private transient GaussianEstimate parameterEstimateGenerator;
-	public static final String PREDICTIONS = "predictions";
-	public static final String PREDICTION_VARIANCE = "predictionVariance";
-	private transient LocalDateTime lastAccessed;	// the last datetime at which this metamodel was accessed (used in cache management in CFSStandGrowth) 
-	
 	public enum PredictionVarianceOutputType {
 		/**
 		 * No variance output
@@ -213,6 +216,24 @@ public class MetaModel implements Saveable {
 		PARAMESTRE,
 	}
 
+	
+	
+	protected MetropolisHastingsParameters mhSimParms;
+	protected final Map<Integer, ScriptResult> scriptResults;
+	protected AbstractModelImplementation model;
+	private final String stratumGroup;
+	private DataSet modelComparison;
+	protected final String geoDomain;
+	protected final String dataSource;
+	public Date lastFitTimeStamp;
+	private transient GaussianEstimate parameterEstimateGenerator;
+	public static final String PREDICTIONS = "predictions";
+	public static final String PREDICTION_VARIANCE = "predictionVariance";
+	private transient LocalDateTime lastAccessed;	// the last datetime at which this metamodel was accessed (used in cache management in CFSStandGrowth) 
+	
+
+	private Map<ModelImplEnum, LinkedHashMap<String, Object>[]> parametersMap;
+	
 	/**
 	 * Constructor.
 	 * @param stratumGroup a String representing the stratum group
@@ -226,6 +247,55 @@ public class MetaModel implements Saveable {
 		
 		scriptResults = new ConcurrentHashMap<Integer, ScriptResult>();
 		setDefaultSettings();
+	}
+
+	
+	Map<ModelImplEnum, LinkedHashMap<String, Object>[]> getParametersMap() {
+		if (parametersMap == null ) {
+			parametersMap = new HashMap<ModelImplEnum, LinkedHashMap<String, Object>[]>();
+		}
+		return parametersMap;
+	}
+
+	/**
+	 * Define the starting values and prior distributions of parameters for a particular 
+	 * model implementation. <p>
+	 * If the parms argument is set to null, the parameters are reset to their default values.
+	 * 
+	 * @param modelImpl a ModelImplEnum constant that stands for the model implementation
+	 * @param parms a LinkedHashMap whose keys are the names of the InputParametersMapKey enum constants
+	 * with values of appropriate types
+	 * @see InputParametersMapKey
+	 */
+	public void setStartingValuesForThisModelImplementation(ModelImplEnum modelImpl, LinkedHashMap<String, Object>[] parms) {
+		getParametersMap().put(modelImpl, parms);
+	}
+
+	/**
+	 * Define the starting values and prior distributions of parameters for a particular 
+	 * model implementation. <p>
+	 * 
+	 * @param modelImpl a ModelImplEnum constant that stands for the model implementation
+	 * @param parms a JSON string representing a LinkedHashMap whose keys are the names of the InputParametersMapKey enum constants
+	 * with values of appropriate types
+	 * @see InputParametersMapKey
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public void setStartingValuesForThisModelImplementation(ModelImplEnum modelImpl, String jsonLinkedHashMap) {
+		Object o = JsonReader.jsonToJava(jsonLinkedHashMap, null);
+		if (!o.getClass().isArray()) {
+			throw new InvalidParameterException("The JSON string should stand for an array of LinkedHashMap instances!");
+		}
+		int length = Array.getLength(o);
+		LinkedHashMap<String, Object>[] mapArray = new LinkedHashMap[length];
+		for (int i = 0; i < length; i++) {
+			Object innerMap = Array.get(o, i);
+			if (!(innerMap instanceof LinkedHashMap)) {
+				throw new InvalidParameterException("The JSON string should stand for an array of LinkedHashMap instances!");
+			}
+			mapArray[i] = (LinkedHashMap) innerMap;
+		}
+		setStartingValuesForThisModelImplementation(modelImpl, mapArray);
 	}
 
 	private void setDefaultSettings() {
@@ -277,6 +347,7 @@ public class MetaModel implements Saveable {
 			}
 		}
 		if (canBeAdded) {
+			addStratumAgeFieldToInnerDataSet(result.getDataSet(), initialAge);
 			scriptResults.put(initialAge, result);
 			model = null; // so that convergence is set to false by default	
 		} else {
@@ -537,15 +608,6 @@ public class MetaModel implements Saveable {
 		return model.getParameters();
 	}
 
-//	/**
-//	 * Export the initial data set (before fitting the meta-model).
-//	 * @param filename
-//	 * @throws Exception
-//	 */
-//	public void exportInitialDataSet(String filename) throws Exception {
-//		getDataStructureReady().getDataSet().save(filename);
-//	}
-
 	/**
 	 * Export a final dataset, that is the initial data set plus the meta-model
 	 * predictions.<p>
@@ -565,11 +627,7 @@ public class MetaModel implements Saveable {
 	 * @return a String
 	 */
 	public String getSelectedOutputType() {
-		if (model != null) {
-			return model.getSelectedOutputType();
-		} else {
-			return "";
-		}
+		return model != null ? model.getSelectedOutputType() : "";
 	}
 
 	/**
@@ -691,6 +749,25 @@ public class MetaModel implements Saveable {
 	}
 
 	/**
+	 * Compile all the script results into a DataSet instance.
+	 * @return a DataSet instance
+	 */
+	public DataSet convertScriptResultsIntoDataSet() {
+		DataSet ds = null;
+		for (Integer ageYr : scriptResults.keySet()) {
+			ScriptResult sr = scriptResults.get(ageYr);
+			DataSet innerDataSet = sr.getDataSet();
+			if (ds == null) {
+				ds = new DataSet(innerDataSet.getFieldNames());
+			}
+			for (Observation o : innerDataSet.getObservations()) {
+				ds.addObservation(o.toArray());
+			}
+		}
+		return ds;
+	}
+	
+	/**
 	 * Save a lighter version of a previously serialized meta-model. <p>
 	 * This lighter version drops the final sample selection for a lighter deserialization.
 	 * 
@@ -724,5 +801,48 @@ public class MetaModel implements Saveable {
 	public MetropolisHastingsParameters getMetropolisHastingsParameters() {
 		return mhSimParms;
 	}
+	
+
+	/**
+	 * Convert parameters into a proper LinkedHashMap instance. <p>
+	 * The parameters are expected to come in the order of the InputParametersMapKey enum.
+	 * @param record an array of objects
+	 * @return a LinkedHashMap instance
+	 * @see InputParametersMapKey
+	 */
+	public static LinkedHashMap<String,Object> convertParameters(Object[] record) {
+		if (record.length != InputParametersMapKey.values().length) {
+			throw new InvalidParameterException("The length of the record is supposed to be " + InputParametersMapKey.values().length + "!");
+		}
+		LinkedHashMap<String,Object> oMap = new LinkedHashMap<String,Object>();
+		for (InputParametersMapKey key : InputParametersMapKey.values()) {
+			oMap.put(key.name(), record[key.ordinal()]);
+		}
+		return oMap;
+	}
+
+	private void addStratumAgeFieldToInnerDataSet(DataSet innerDataset, int stratumAgeYr) {
+		Object[] stratumAgeFieldValues = new Object[innerDataset.getNumberOfObservations()];
+		for (int i = 0; i < stratumAgeFieldValues.length; i++) {
+			stratumAgeFieldValues[i] = stratumAgeYr;
+		}
+		innerDataset.addField(STRATUM_AGE_STR, stratumAgeFieldValues);
+		innerDataset.indexFieldType();
+	}
+	
+	@Override
+	public void postUnmarshallingAction() {
+		if (scriptResults != null) {
+			for (Integer stratumAgeYr : scriptResults.keySet()) {
+				ScriptResult sr = scriptResults.get(stratumAgeYr);
+				DataSet innerDataset = sr.getDataSet();
+				if (!innerDataset.getFieldNames().contains(STRATUM_AGE_STR)) {
+					addStratumAgeFieldToInnerDataSet(innerDataset, stratumAgeYr);
+				}
+			}
+		}
+	}
+	
+	
 	
 }

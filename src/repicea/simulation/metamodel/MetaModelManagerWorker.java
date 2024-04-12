@@ -27,11 +27,11 @@ class MetaModelManagerWorker extends Thread implements Runnable {
 
 	static final Object FinishToken = new Object();
 	
-	final LinkedBlockingQueue queue;
+	final LinkedBlockingQueue<?> queue;
 	final String outputType;
 	final ModelImplEnum modelImplEnum;
 	
-	MetaModelManagerWorker(int i, LinkedBlockingQueue queue, String outputType, ModelImplEnum e) {
+	MetaModelManagerWorker(int i, LinkedBlockingQueue<?> queue, String outputType, ModelImplEnum e) {
 		super("ExtMetaModelManagerWorker " + i);
 		this.queue = queue;
 		this.outputType = outputType;
