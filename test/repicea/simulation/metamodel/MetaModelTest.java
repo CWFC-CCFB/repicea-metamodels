@@ -24,8 +24,10 @@ package repicea.simulation.metamodel;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.SimpleFormatter;
@@ -34,6 +36,8 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.cedarsoftware.util.io.JsonWriter;
 
 import repicea.serial.SerializerChangeMonitor;
 import repicea.simulation.metamodel.MetaModel.ModelImplEnum;
@@ -124,6 +128,32 @@ public class MetaModelTest {
 		Assert.assertEquals("Testing prediction at t30", 28.161390838930085 , (double) pred.getValueAt(3, "Pred"), 1E-8);
 	}
 
+	/**
+	 * Test whether the JSON string can be properly deserialized.<p>
+	 * The test will throw an exception if the JSON string cannot be deserialized.
+	 */
+	@Test
+	public void testingJSONParameterisation() {
+		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[5];
+		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "710", "Uniform", new String[] {"0", "2000"}});
+		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.008", "Uniform", new String[] {"0.00001", "0.05"}});
+		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "1.4", "Uniform", new String[] {"0.8", "6"}});
+		parms[3] = MetaModel.convertParameters(new Object[] {"rho", "0.99", "Uniform", new String[] {"0.8", "0.995"}});
+		parms[4] = MetaModel.convertParameters(new Object[] {"sigma2stratum", "5300", "Uniform", new String[] {"0", "15000"}});
+
+		Map<String, Object> args = new HashMap<String, Object>();
+		args.put(JsonWriter.TYPE, false);
+		String jsonStr = JsonWriter.objectToJson(parms, args);
+		MetaModelInstance.setStartingValuesForThisModelImplementation(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect, jsonStr);
+	}
+
+	@Test
+	public void testingStratumAgeInDataset() {
+		DataSet ds = MetaModelInstance.convertScriptResultsIntoDataSet();
+		Assert.assertTrue("Testing if stratum age is part of the dataset", ds.getFieldNames().contains(MetaModel.STRATUM_AGE_STR));
+	}
+
+	
 	@SuppressWarnings("unchecked")
 	public static void main(String[] args) throws IOException, MetaModelException {
 //		AbstractModelImplementation.EstimateResidualVariance = true;

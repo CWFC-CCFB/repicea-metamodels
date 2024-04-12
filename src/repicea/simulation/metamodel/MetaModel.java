@@ -21,6 +21,7 @@ package repicea.simulation.metamodel;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.security.InvalidParameterException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
+import com.cedarsoftware.util.io.JsonReader;
 import com.cedarsoftware.util.io.JsonWriter;
 
 import repicea.io.FileUtility;
@@ -81,7 +83,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 				"repicea.math.integral.AbstractGaussQuadrature$NumberOfPoints");
 	}
 
-	private final String StratumAgeStr = "StratumAgeYr";
+	static final String STRATUM_AGE_STR = "StratumAgeYr";
 
 	public class MetaDataHelper {
 
@@ -268,7 +270,34 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	public void setStartingValuesForThisModelImplementation(ModelImplEnum modelImpl, LinkedHashMap<String, Object>[] parms) {
 		getParametersMap().put(modelImpl, parms);
 	}
-	
+
+	/**
+	 * Define the starting values and prior distributions of parameters for a particular 
+	 * model implementation. <p>
+	 * 
+	 * @param modelImpl a ModelImplEnum constant that stands for the model implementation
+	 * @param parms a JSON string representing a LinkedHashMap whose keys are the names of the InputParametersMapKey enum constants
+	 * with values of appropriate types
+	 * @see InputParametersMapKey
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public void setStartingValuesForThisModelImplementation(ModelImplEnum modelImpl, String jsonLinkedHashMap) {
+		Object o = JsonReader.jsonToJava(jsonLinkedHashMap, null);
+		if (!o.getClass().isArray()) {
+			throw new InvalidParameterException("The JSON string should stand for an array of LinkedHashMap instances!");
+		}
+		int length = Array.getLength(o);
+		LinkedHashMap<String, Object>[] mapArray = new LinkedHashMap[length];
+		for (int i = 0; i < length; i++) {
+			Object innerMap = Array.get(o, i);
+			if (!(innerMap instanceof LinkedHashMap)) {
+				throw new InvalidParameterException("The JSON string should stand for an array of LinkedHashMap instances!");
+			}
+			mapArray[i] = (LinkedHashMap) innerMap;
+		}
+		setStartingValuesForThisModelImplementation(modelImpl, mapArray);
+	}
+
 	private void setDefaultSettings() {
 		mhSimParms = new MetropolisHastingsParameters();
 	}
@@ -797,7 +826,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		for (int i = 0; i < stratumAgeFieldValues.length; i++) {
 			stratumAgeFieldValues[i] = stratumAgeYr;
 		}
-		innerDataset.addField(StratumAgeStr, stratumAgeFieldValues);
+		innerDataset.addField(STRATUM_AGE_STR, stratumAgeFieldValues);
 		innerDataset.indexFieldType();
 	}
 	
@@ -807,7 +836,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 			for (Integer stratumAgeYr : scriptResults.keySet()) {
 				ScriptResult sr = scriptResults.get(stratumAgeYr);
 				DataSet innerDataset = sr.getDataSet();
-				if (!innerDataset.getFieldNames().contains(StratumAgeStr)) {
+				if (!innerDataset.getFieldNames().contains(STRATUM_AGE_STR)) {
 					addStratumAgeFieldToInnerDataSet(innerDataset, stratumAgeYr);
 				}
 			}
