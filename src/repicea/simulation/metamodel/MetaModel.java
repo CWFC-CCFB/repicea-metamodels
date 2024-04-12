@@ -276,7 +276,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	 * model implementation. <p>
 	 * 
 	 * @param modelImpl a ModelImplEnum constant that stands for the model implementation
-	 * @param parms a JSON string representing a LinkedHashMap whose keys are the names of the InputParametersMapKey enum constants
+	 * @param jsonLinkedHashMap a JSON string representing a LinkedHashMap whose keys are the names of the InputParametersMapKey enum constants
 	 * with values of appropriate types
 	 * @see InputParametersMapKey
 	 */
