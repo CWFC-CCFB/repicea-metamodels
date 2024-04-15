@@ -24,6 +24,7 @@ package repicea.simulation.metamodel;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,7 +41,10 @@ import org.junit.Test;
 import com.cedarsoftware.util.io.JsonWriter;
 
 import repicea.serial.SerializerChangeMonitor;
+import repicea.simulation.climate.REpiceaClimateGenerator.ClimateChangeScenario;
+import repicea.simulation.climate.REpiceaClimateGenerator.RepresentativeConcentrationPathway;
 import repicea.simulation.metamodel.MetaModel.ModelImplEnum;
+import repicea.simulation.scriptapi.ScriptResult;
 import repicea.stats.data.DataSet;
 import repicea.util.ObjectUtility;
 import repicea.util.REpiceaLogManager;
@@ -128,6 +132,28 @@ public class MetaModelTest {
 		Assert.assertEquals("Testing prediction at t30", 28.161390838930085 , (double) pred.getValueAt(3, "Pred"), 1E-8);
 	}
 
+	@Test
+	public void testAddScriptResult() {
+		MetaModel mm = new MetaModel("RE2", "QC", "TSP4");
+		DataSet ds = ScriptResult.createEmptyDataSet()		;
+		ds.addObservation(new Object[] {1970, 0, "patate", 25.2, 25.2, "allo"});
+		ds.addObservation(new Object[] {1980, 0, "carotte", 32d, 35.2, "allo2"});
+		ds.indexFieldType();
+		ScriptResult sr = new ScriptResult(500, 20, RepresentativeConcentrationPathway.RCP2_6, "Artemis", ds);
+		mm.addScriptResult(30, sr);
+		
+		ds = ScriptResult.createEmptyDataSet()		;
+		ds.addObservation(new Object[] {2021, 0, "patate", 15.2, 25.4, "allo"});
+		ds.addObservation(new Object[] {2031, 0, "carotte", 16d, 15.2, "allo2"});
+		ds.indexFieldType();
+		sr = new ScriptResult(500, 20, RepresentativeConcentrationPathway.RCP2_6, "Artemis", ds);
+		mm.addScriptResult(50, sr);
+
+		int u = 0;
+	}
+	
+	
+	
 	/**
 	 * Test whether the JSON string can be properly deserialized.<p>
 	 * The test will throw an exception if the JSON string cannot be deserialized.

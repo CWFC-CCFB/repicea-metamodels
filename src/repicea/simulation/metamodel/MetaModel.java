@@ -335,6 +335,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	 * @param result a ScriptResult instance containing the stratum projection from the original 
 	 */
 	public void addScriptResult(int initialAge, ScriptResult result) {
+		addStratumAgeFieldToInnerDataSet(result.getDataSet(), initialAge);
 		boolean canBeAdded;
 		if (scriptResults.isEmpty()) {
 			canBeAdded = true;
@@ -347,7 +348,6 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 			}
 		}
 		if (canBeAdded) {
-			addStratumAgeFieldToInnerDataSet(result.getDataSet(), initialAge);
 			scriptResults.put(initialAge, result);
 			model = null; // so that convergence is set to false by default	
 		} else {
@@ -821,13 +821,12 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		return oMap;
 	}
 
-	private void addStratumAgeFieldToInnerDataSet(DataSet innerDataset, int stratumAgeYr) {
+	private static void addStratumAgeFieldToInnerDataSet(DataSet innerDataset, int stratumAgeYr) {
 		Object[] stratumAgeFieldValues = new Object[innerDataset.getNumberOfObservations()];
 		for (int i = 0; i < stratumAgeFieldValues.length; i++) {
 			stratumAgeFieldValues[i] = stratumAgeYr;
 		}
 		innerDataset.addField(STRATUM_AGE_STR, stratumAgeFieldValues);
-		innerDataset.indexFieldType();
 	}
 	
 	@Override
