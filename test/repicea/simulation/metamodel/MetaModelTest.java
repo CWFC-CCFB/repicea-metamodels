@@ -187,52 +187,57 @@ public class MetaModelTest {
         System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$-6s %5$s%6$s%n");
 		REpiceaLogManager.getLogger(MetaModelManager.LoggerName).setLevel(Level.FINE);
 		ConsoleHandler sh = new ConsoleHandler();
-//		sh.setLevel(Level.FINE);
-//		REpiceaLogManager.getLogger(MetaModelManager.LoggerName).addHandler(sh);
-//		String outputPath = "C:\\Users\\matforti\\Documents\\7_Developpement\\ModellingProjects\\Quebec\\ProcessedData\\UAF02664\\metaModels";
 		String outputPath = ObjectUtility.getPackagePath(MetaModelTest.class);
-//		FileHandler sh = new FileHandler(outputPath + "metamodel.log");
 		sh.setLevel(Level.FINE);
 		sh.setFormatter(new SimpleFormatter());
 		REpiceaLogManager.getLogger(MetaModelManager.LoggerName).addHandler(sh);
 		
-		String path = ObjectUtility.getPackagePath(MetaModelTest.class);
-		List<String> vegPotList = new ArrayList<String>();
-//		vegPotList.add("MS2");
-//		vegPotList.add("RE1");
-//		vegPotList.add("RE2");
-//		vegPotList.add("RE3");
-		vegPotList.add("RS2");
-//		vegPotList.add("RS3");
+//		String path = ObjectUtility.getPackagePath(MetaModelTest.class);
+//		List<String> vegPotList = new ArrayList<String>();
+////		vegPotList.add("MS2");
+////		vegPotList.add("RE1");
+////		vegPotList.add("RE2");
+////		vegPotList.add("RE3");
+//		vegPotList.add("RS2");
+////		vegPotList.add("RS3");
+//		
+//		List<String> outputTypes = new ArrayList<String>();
+//		outputTypes.add("AliveVolume_AllSpecies");
+//
+//		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[5];
+//		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "710", "Uniform", new String[] {"0", "2000"}});
+//		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.008", "Uniform", new String[] {"0.00001", "0.05"}});
+//		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "1.4", "Uniform", new String[] {"0.8", "6"}});
+//		parms[3] = MetaModel.convertParameters(new Object[] {"rho", "0.99", "Uniform", new String[] {"0.8", "0.995"}});
+//		parms[4] = MetaModel.convertParameters(new Object[] {"sigma2stratum", "5300", "Uniform", new String[] {"0", "15000"}});
+//		
+//		for (String vegPot : vegPotList) {
+//			String metaModelFilename = path + "QC_FMU02664_" + vegPot + "_NoChange_root.zml";
+//			for (String outputType : outputTypes) {
+//				MetaModel m = MetaModel.Load(metaModelFilename);
+//				m.setStartingValuesForThisModelImplementation(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect, parms);
+//				m.mhSimParms.nbInitialGrid = 0;
+//				m.mhSimParms.nbBurnIn = 50000;
+//				m.mhSimParms.nbAcceptedRealizations = 1000000 + m.mhSimParms.nbBurnIn;
+//				boolean enabledMixedModelImplementation = vegPot.equals("RE1") ? false : true;
+//				m.fitModel(outputType, enabledMixedModelImplementation);
+////				UNCOMMENT THIS LINE TO UPDATE THE META MODELS
+////				m.save(path + "QC_FMU02664_" + vegPot + "_NoChange_AliveVolume_AllSpecies.zml");
+//				m.exportMetropolisHastingsSample(outputPath + File.separator + vegPot + "_" + outputType + "MHSample.csv");
+//				m.exportFinalDataSet(outputPath + File.separator + vegPot + "_" + outputType + ".csv");
+//				System.out.println(m.getModelComparison().toString());
+//				System.out.println(m.getSummary());
+//				m.getModelComparison().save(outputPath + File.separator + vegPot + "_" + outputType + "ModelComparison.csv");
+//			}
+//		}
+		String jsonStr = "[{\"Parameter\":\"b1\",\"StartingValue\":100,\"Distribution\":\"Uniform\",\"DistParms\":[\"0\",\"300\"]},{\"Parameter\":\"b2\",\"StartingValue\":0.007,\"Distribution\":\"Uniform\",\"DistParms\":[\"0.0001\",\"0.02\"]},{\"Parameter\":\"b3\",\"StartingValue\":2,\"Distribution\":\"Uniform\",\"DistParms\":[\"1\",\"6\"]},{\"Parameter\":\"rho\",\"StartingValue\":0.98,\"Distribution\":\"Uniform\",\"DistParms\":[\"0.8\",\"0.995\"]},{\"Parameter\":\"sigma2stratum\",\"StartingValue\":500,\"Distribution\":\"Uniform\",\"DistParms\":[\"0\",\"1500\"]}]";
+		MetaModel m = MetaModel.Load(outputPath + "FittedMetamodel_Coniferous_AllAlive_FMU02664.zml");
+		System.out.println(m.getSummary());
 		
-		List<String> outputTypes = new ArrayList<String>();
-		outputTypes.add("AliveVolume_AllSpecies");
-
-		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[5];
-		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "710", "Uniform", new String[] {"0", "2000"}});
-		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.008", "Uniform", new String[] {"0.00001", "0.05"}});
-		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "1.4", "Uniform", new String[] {"0.8", "6"}});
-		parms[3] = MetaModel.convertParameters(new Object[] {"rho", "0.99", "Uniform", new String[] {"0.8", "0.995"}});
-		parms[4] = MetaModel.convertParameters(new Object[] {"sigma2stratum", "5300", "Uniform", new String[] {"0", "15000"}});
+		m.setStartingValuesForThisModelImplementation(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect, jsonStr);
+		m.fitModel(m.getSelectedOutputType(), true);
 		
-		for (String vegPot : vegPotList) {
-			String metaModelFilename = path + "QC_FMU02664_" + vegPot + "_NoChange_root.zml";
-			for (String outputType : outputTypes) {
-				MetaModel m = MetaModel.Load(metaModelFilename);
-				m.setStartingValuesForThisModelImplementation(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect, parms);
-				m.mhSimParms.nbInitialGrid = 0;
-				m.mhSimParms.nbBurnIn = 50000;
-				m.mhSimParms.nbAcceptedRealizations = 1000000 + m.mhSimParms.nbBurnIn;
-				boolean enabledMixedModelImplementation = vegPot.equals("RE1") ? false : true;
-				m.fitModel(outputType, enabledMixedModelImplementation);
-//				UNCOMMENT THIS LINE TO UPDATE THE META MODELS
-//				m.save(path + "QC_FMU02664_" + vegPot + "_NoChange_AliveVolume_AllSpecies.zml");
-				m.exportMetropolisHastingsSample(outputPath + File.separator + vegPot + "_" + outputType + "MHSample.csv");
-				m.exportFinalDataSet(outputPath + File.separator + vegPot + "_" + outputType + ".csv");
-				System.out.println(m.getModelComparison().toString());
-				System.out.println(m.getSummary());
-				m.getModelComparison().save(outputPath + File.separator + vegPot + "_" + outputType + "ModelComparison.csv");
-			}
-		}
+		
+		int u = 0;
 	}
 }

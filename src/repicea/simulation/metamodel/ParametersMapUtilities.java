@@ -71,7 +71,7 @@ public class ParametersMapUtilities {
 				throw new InvalidParameterException("The parameter map should contain key: " + key.name() + " !");
 			}
 			Object value = clonedMap.get(key.name());
-			if (!value.getClass().isAssignableFrom(key.expectedClass)) {
+			if (!key.expectedClass.isAssignableFrom(value.getClass())) {
 				if (key.expectedClass.equals(String.class)) {
 					clonedMap.put(key.name(), value.toString());
 				} else if (key.expectedClass.equals(Double.class)) {
