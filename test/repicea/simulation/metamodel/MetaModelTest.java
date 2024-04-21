@@ -21,10 +21,7 @@
 
 package repicea.simulation.metamodel;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,12 +33,13 @@ import java.util.logging.SimpleFormatter;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import com.cedarsoftware.util.io.JsonWriter;
 
 import repicea.serial.SerializerChangeMonitor;
-import repicea.simulation.climate.REpiceaClimateGenerator.ClimateChangeScenario;
 import repicea.simulation.climate.REpiceaClimateGenerator.RepresentativeConcentrationPathway;
 import repicea.simulation.metamodel.MetaModel.ModelImplEnum;
 import repicea.simulation.scriptapi.ScriptResult;
@@ -51,6 +49,7 @@ import repicea.util.REpiceaLogManager;
 import repicea.util.REpiceaTranslator;
 import repicea.util.REpiceaTranslator.Language;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class MetaModelTest {
 
 	static {		
@@ -91,6 +90,10 @@ public class MetaModelTest {
 	public static void deserializingMetaModel() throws IOException {
 		String metaModelFilename = ObjectUtility.getPackagePath(MetaModelTest.class) + "QC_FMU02664_RE2_NoChange_AliveVolume_AllSpecies.zml";
 		MetaModelInstance = MetaModel.Load(metaModelFilename);
+		MetaModelInstance.getMetropolisHastingsParameters().nbBurnIn = 1000;
+		MetaModelInstance.getMetropolisHastingsParameters().nbAcceptedRealizations = 11000;
+		MetaModelInstance.getMetropolisHastingsParameters().nbInitialGrid = 1000;
+		MetaModelInstance.getMetropolisHastingsParameters().oneEach = 25;
 	}
 	
 	@AfterClass
@@ -99,7 +102,7 @@ public class MetaModelTest {
 	}
 
 	@Test
-	public void testingMetaModelDeserialization() throws IOException, MetaModelException {
+	public void test01MetaModelDeserialization() throws IOException, MetaModelException {
 		Assert.assertTrue("Model is deserialized", MetaModelInstance != null);
 		Assert.assertTrue("Has converged", MetaModelInstance.hasConverged());
 		String filename = ObjectUtility.getPackagePath(getClass()) + "finalDataSet.csv";
@@ -109,7 +112,7 @@ public class MetaModelTest {
 	}
 	
 	@Test
-	public void testingOutputTypes() throws Exception {
+	public void test02OutputTypes() throws Exception {
 		List<String> outputTypes = MetaModelInstance.getPossibleOutputTypes();
 		Assert.assertEquals("Testing list size", 3, outputTypes.size());
 		Assert.assertEquals("Testing first value", "AliveVolume_AllSpecies", outputTypes.get(0));
@@ -118,13 +121,13 @@ public class MetaModelTest {
 	}
 
 	@Test
-	public void testingMetaModelPrediction() throws Exception {
+	public void test03MetaModelPrediction() throws Exception {
 		double pred = MetaModelInstance.getPrediction(90, 0);
 		Assert.assertEquals("Testing prediction at 90 yrs of age", 104.26481827545614, pred, 1E-8);
 	}
 
 	@Test
-	public void testingMetaModelMCPredictionWithNoVaribility() throws Exception {
+	public void test04MetaModelMCPredictionWithNoVaribility() throws Exception {
 		DataSet pred = MetaModelInstance.getMonteCarloPredictions(new int[] {0,10,20,30}, 0, 0, 0);
 		Assert.assertEquals("Testing prediction at t0", 0d, (double) pred.getValueAt(0, "Pred"), 1E-8);
 		Assert.assertEquals("Testing prediction at t10", 4.1785060702519825, (double) pred.getValueAt(1, "Pred"), 1E-8);
@@ -133,7 +136,7 @@ public class MetaModelTest {
 	}
 
 	@Test
-	public void testAddScriptResult() {
+	public void test05AddScriptResult() {
 		MetaModel mm = new MetaModel("RE2", "QC", "TSP4");
 		DataSet ds = ScriptResult.createEmptyDataSet()		;
 		ds.addObservation(new Object[] {1970, 0, "patate", 25.2, 25.2, "allo"});
@@ -148,18 +151,24 @@ public class MetaModelTest {
 		ds.indexFieldType();
 		sr = new ScriptResult(500, 20, RepresentativeConcentrationPathway.RCP2_6, "Artemis", ds);
 		mm.addScriptResult(50, sr);
-
-		int u = 0;
+		Assert.assertEquals("Testing scriptResults map size", 2, mm.scriptResults.size());
 	}
 	
+	@Test
+	public void test06StratumAgeInDataset() {
+		DataSet ds = MetaModelInstance.convertScriptResultsIntoDataSet();
+		Assert.assertTrue("Testing if stratum age is part of the dataset", ds.getFieldNames().contains(MetaModel.STRATUM_AGE_STR));
+	}
 	
 	
 	/**
 	 * Test whether the JSON string can be properly deserialized.<p>
 	 * The test will throw an exception if the JSON string cannot be deserialized.
+	 * @throws MetaModelException 
 	 */
+	@SuppressWarnings("unchecked")
 	@Test
-	public void testingJSONParameterisation() {
+	public void test07JSONParameterisation() throws MetaModelException {
 		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[5];
 		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "710", "Uniform", new String[] {"0", "2000"}});
 		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.008", "Uniform", new String[] {"0.00001", "0.05"}});
@@ -170,14 +179,14 @@ public class MetaModelTest {
 		Map<String, Object> args = new HashMap<String, Object>();
 		args.put(JsonWriter.TYPE, false);
 		String jsonStr = JsonWriter.objectToJson(parms, args);
-		MetaModelInstance.setStartingValuesForThisModelImplementation(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect, jsonStr);
+		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
+		startingValuesMap.put(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect.name(), jsonStr);
+		System.out.println(MetaModelInstance.getPossibleOutputTypes());
+				
+		MetaModelInstance.fitModel("AliveVolume_AllSpecies", startingValuesMap);
+		Assert.assertEquals("Testing final sample size", 400, MetaModelInstance.model.mh.convertMetropolisHastingsSampleToDataSet().getNumberOfObservations());
 	}
 
-	@Test
-	public void testingStratumAgeInDataset() {
-		DataSet ds = MetaModelInstance.convertScriptResultsIntoDataSet();
-		Assert.assertTrue("Testing if stratum age is part of the dataset", ds.getFieldNames().contains(MetaModel.STRATUM_AGE_STR));
-	}
 
 	
 	@SuppressWarnings("unchecked")
@@ -233,10 +242,9 @@ public class MetaModelTest {
 		String jsonStr = "[{\"Parameter\":\"b1\",\"StartingValue\":100,\"Distribution\":\"Uniform\",\"DistParms\":[\"0\",\"300\"]},{\"Parameter\":\"b2\",\"StartingValue\":0.007,\"Distribution\":\"Uniform\",\"DistParms\":[\"0.0001\",\"0.02\"]},{\"Parameter\":\"b3\",\"StartingValue\":2,\"Distribution\":\"Uniform\",\"DistParms\":[\"1\",\"6\"]},{\"Parameter\":\"rho\",\"StartingValue\":0.98,\"Distribution\":\"Uniform\",\"DistParms\":[\"0.8\",\"0.995\"]},{\"Parameter\":\"sigma2stratum\",\"StartingValue\":500,\"Distribution\":\"Uniform\",\"DistParms\":[\"0\",\"1500\"]}]";
 		MetaModel m = MetaModel.Load(outputPath + "FittedMetamodel_Coniferous_AllAlive_FMU02664.zml");
 		System.out.println(m.getSummary());
-		
-		m.setStartingValuesForThisModelImplementation(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect, jsonStr);
-		m.fitModel(m.getSelectedOutputType(), true);
-		
+		LinkedHashMap<String, Object> models = new LinkedHashMap<String, Object>();
+		models.put(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect.name(), jsonStr);
+		m.fitModel(m.getSelectedOutputType(), models);
 		
 		int u = 0;
 	}

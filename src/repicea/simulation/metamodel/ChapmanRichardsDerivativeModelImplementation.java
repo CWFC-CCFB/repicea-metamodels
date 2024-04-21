@@ -36,8 +36,8 @@ class ChapmanRichardsDerivativeModelImplementation extends AbstractModelImplemen
 
 	final static List<String> PARAMETERS = Arrays.asList(new String[] {"b1", "b2", "b3", "rho", "sigma2"});
 
-	protected ChapmanRichardsDerivativeModelImplementation(String outputType, MetaModel model) throws StatisticalDataException {
-		super(outputType, model);
+	protected ChapmanRichardsDerivativeModelImplementation(String outputType, MetaModel model, LinkedHashMap<String, Object>[] startingValues) throws StatisticalDataException {
+		super(outputType, model, startingValues);
 	}
 
 	@Override

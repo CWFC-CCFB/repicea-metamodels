@@ -143,7 +143,7 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	 * @param outputType the desired outputType to be modelled
 	 * @param scriptResults a Map containing the ScriptResult instances of the growth simulation
 	 */
-	AbstractModelImplementation(String outputType, MetaModel metaModel) throws StatisticalDataException {
+	AbstractModelImplementation(String outputType, MetaModel metaModel, LinkedHashMap<String, Object>[] startingValues) throws StatisticalDataException {
 		Map<Integer, ScriptResult> scriptResults = metaModel.scriptResults;
 		String stratumGroup = metaModel.getStratumGroup();
 		if (stratumGroup == null) {
@@ -186,9 +186,9 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		mh = new MetropolisHastingsAlgorithm(this, MetaModelManager.LoggerName, getLogMessagePrefix());
 		mh.setSimulationParameters(metaModel.mhSimParms);
 		
-		LinkedHashMap<String, Object>[] unformattedMap = metaModel.getParametersMap().containsKey(getModelImplementation()) && metaModel.getParametersMap().get(getModelImplementation()) != null ?
-				metaModel.getParametersMap().get(getModelImplementation()) :
-					getDefaultParameters();
+		LinkedHashMap<String, Object>[] unformattedMap = startingValues == null ?
+				getDefaultParameters() :
+				startingValues;
 		parametersMap = ParametersMapUtilities.formatParametersMap(unformattedMap, getParameterNames());
 	}
 
