@@ -92,7 +92,7 @@ public class MetaModelTest {
 		MetaModelInstance = MetaModel.Load(metaModelFilename);
 		MetaModelInstance.getMetropolisHastingsParameters().nbBurnIn = 1000;
 		MetaModelInstance.getMetropolisHastingsParameters().nbAcceptedRealizations = 11000;
-		MetaModelInstance.getMetropolisHastingsParameters().nbInitialGrid = 1000;
+		MetaModelInstance.getMetropolisHastingsParameters().nbInitialGrid = 0;
 		MetaModelInstance.getMetropolisHastingsParameters().oneEach = 25;
 	}
 	
