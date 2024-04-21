@@ -232,7 +232,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	private transient LocalDateTime lastAccessed;	// the last datetime at which this metamodel was accessed (used in cache management in CFSStandGrowth) 
 	
 
-	private Map<ModelImplEnum, LinkedHashMap<String, Object>[]> parametersMap;
+//	private Map<ModelImplEnum, LinkedHashMap<String, Object>[]> parametersMap;
 	
 	/**
 	 * Constructor.
@@ -250,38 +250,44 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	}
 
 	
-	Map<ModelImplEnum, LinkedHashMap<String, Object>[]> getParametersMap() {
-		if (parametersMap == null ) {
-			parametersMap = new HashMap<ModelImplEnum, LinkedHashMap<String, Object>[]>();
-		}
-		return parametersMap;
-	}
+//	Map<ModelImplEnum, LinkedHashMap<String, Object>[]> getParametersMap() {
+//		if (parametersMap == null ) {
+//			parametersMap = new HashMap<ModelImplEnum, LinkedHashMap<String, Object>[]>();
+//		}
+//		return parametersMap;
+//	}
 
-	/**
-	 * Define the starting values and prior distributions of parameters for a particular 
-	 * model implementation. <p>
-	 * If the parms argument is set to null, the parameters are reset to their default values.
-	 * 
-	 * @param modelImpl a ModelImplEnum constant that stands for the model implementation
-	 * @param parms a LinkedHashMap whose keys are the names of the InputParametersMapKey enum constants
-	 * with values of appropriate types
-	 * @see InputParametersMapKey
-	 */
-	public void setStartingValuesForThisModelImplementation(ModelImplEnum modelImpl, LinkedHashMap<String, Object>[] parms) {
-		getParametersMap().put(modelImpl, parms);
-	}
+//	/**
+//	 * Define the starting values and prior distributions of parameters for a particular 
+//	 * model implementation. <p>
+//	 * If the parms argument is set to null, the parameters are reset to their default values.
+//	 * 
+//	 * @param modelImpl a ModelImplEnum constant that stands for the model implementation
+//	 * @param parms a LinkedHashMap whose keys are the names of the InputParametersMapKey enum constants
+//	 * with values of appropriate types
+//	 * @see InputParametersMapKey
+//	 */
+//	public void setStartingValuesForThisModelImplementation(ModelImplEnum modelImpl, LinkedHashMap<String, Object>[] parms) {
+//		getParametersMap().put(modelImpl, parms);
+//	}
 
-	/**
-	 * Define the starting values and prior distributions of parameters for a particular 
-	 * model implementation. <p>
-	 * 
-	 * @param modelImpl a ModelImplEnum constant that stands for the model implementation
-	 * @param jsonLinkedHashMap a JSON string representing a LinkedHashMap whose keys are the names of the InputParametersMapKey enum constants
-	 * with values of appropriate types
-	 * @see InputParametersMapKey
-	 */
+//	/**
+//	 * Define the starting values and prior distributions of parameters for a particular 
+//	 * model implementation. <p>
+//	 * 
+//	 * @param modelImpl a ModelImplEnum constant that stands for the model implementation
+//	 * @param jsonLinkedHashMap a JSON string representing a LinkedHashMap whose keys are the names of the InputParametersMapKey enum constants
+//	 * with values of appropriate types
+//	 * @see InputParametersMapKey
+//	 */
+//	public void setStartingValuesForThisModelImplementation(ModelImplEnum modelImpl, String jsonLinkedHashMap) {
+//		LinkedHashMap<String, Object>[] mapArray = convertJSONStrToLinkedHashMapArray(jsonLinkedHashMap);
+//		setStartingValuesForThisModelImplementation(modelImpl, mapArray);
+//	}
+
+	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public void setStartingValuesForThisModelImplementation(ModelImplEnum modelImpl, String jsonLinkedHashMap) {
+	private static LinkedHashMap<String, Object>[] convertJSONStrToLinkedHashMapArray(String jsonLinkedHashMap) {
 		Object o = JsonReader.jsonToJava(jsonLinkedHashMap, null);
 		if (!o.getClass().isArray()) {
 			throw new InvalidParameterException("The JSON string should stand for an array of LinkedHashMap instances!");
@@ -295,9 +301,9 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 			}
 			mapArray[i] = (LinkedHashMap) innerMap;
 		}
-		setStartingValuesForThisModelImplementation(modelImpl, mapArray);
+		return mapArray;
 	}
-
+	
 	private void setDefaultSettings() {
 		mhSimParms = new MetropolisHastingsParameters();
 	}
@@ -355,21 +361,21 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		}
 	}
 
-	private AbstractModelImplementation getInnerModel(String outputType, ModelImplEnum modelImplEnum)
+	private AbstractModelImplementation getInnerModel(String outputType, ModelImplEnum modelImplEnum, LinkedHashMap<String, Object>[] startingValues)
 			throws StatisticalDataException {
 		AbstractModelImplementation model;
 		switch (modelImplEnum) {
 		case ChapmanRichards:
-			model = new ChapmanRichardsModelImplementation(outputType, this);
+			model = new ChapmanRichardsModelImplementation(outputType, this, startingValues);
 			break;
 		case ChapmanRichardsWithRandomEffect:
-			model = new ChapmanRichardsModelWithRandomEffectImplementation(outputType, this);
+			model = new ChapmanRichardsModelWithRandomEffectImplementation(outputType, this, startingValues);
 			break;
 		case ChapmanRichardsDerivative:
-			model = new ChapmanRichardsDerivativeModelImplementation(outputType, this);
+			model = new ChapmanRichardsDerivativeModelImplementation(outputType, this, startingValues);
 			break;
 		case ChapmanRichardsDerivativeWithRandomEffect:
-			model = new ChapmanRichardsDerivativeModelWithRandomEffectImplementation(outputType, this);
+			model = new ChapmanRichardsDerivativeModelWithRandomEffectImplementation(outputType, this, startingValues);
 			break;
 		default:
 			throw new InvalidParameterException("This ModelImplEnum " + modelImplEnum.name() + " has not been implemented yet!");
@@ -442,30 +448,94 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	}
 
 	/**
-	 * Fit the meta-model.
-	 * 
+	 * Fit the meta-model.<p>
+	 * This method fits the following model implementations:
+	 * <ul>
+	 * <li> <b>ChapmanRichards</b>
+	 * <li> <b>ChapmanRichardsWithRandomEffects</b> if the enableMixedModelImplementations is set to true
+	 * <li> <b>ChapmanRichardsDerivative</b>
+	 * <li> <b>ChapmanRichardsDerivativeWithRandomEffect</b> if the enableMixedModelImplementations is set to true
+	 * </ul>
 	 * @param outputType the output type the model will be fitted to (e.g., volumeAlive_Coniferous)
 	 * @param enableMixedModelImplementations true to test meta-models with stratum random effects
 	 * @return a boolean true if the model has converged or false otherwise
+	 * @deprecated Use the {@link MetaModel#fitModel(String, Map)} method instead
 	 */
 	public boolean fitModel(String outputType, boolean enableMixedModelImplementations) {
+		LinkedHashMap<String, Object> modelImplementationStrings = new LinkedHashMap<String, Object>();
+		modelImplementationStrings.put(ModelImplEnum.ChapmanRichards.name(), null);
+		modelImplementationStrings.put(ModelImplEnum.ChapmanRichardsDerivative.name(), null);
+		if (enableMixedModelImplementations) {
+			modelImplementationStrings.put(ModelImplEnum.ChapmanRichardsWithRandomEffect.name(), null);
+			modelImplementationStrings.put(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect.name(), null);
+		}
+		return fitModel(outputType, modelImplementationStrings);
+	}
+
+	@SuppressWarnings({ "unchecked"})
+	private static LinkedHashMap<ModelImplEnum, LinkedHashMap<String, Object>[]> formatModelImplementationMap(Map<String, Object> modelImplementations) {
+		LinkedHashMap<ModelImplEnum, LinkedHashMap<String, Object>[]> myImplementations = new LinkedHashMap<ModelImplEnum, LinkedHashMap<String, Object>[]>();
+		for (String impl : modelImplementations.keySet()) {
+			ModelImplEnum myImpl = null;
+			try { 
+				myImpl = ModelImplEnum.valueOf(impl);
+			} catch (Exception e) {
+				throw new InvalidParameterException("The model implementation " + impl + " is not recognized!");
+			}
+			Object value = modelImplementations.get(impl);
+			if (value == null) {
+				myImplementations.put(myImpl, null);
+			} else {
+				if (value.getClass().isArray()) {
+					int length = Array.getLength(value);
+					if (length == 0) {
+						throw new InvalidParameterException("The starting values of the parameters of the implementation " + myImpl + " are empty!");
+					} else {
+						Object arrayValue = Array.get(value, 0);
+						if (arrayValue instanceof LinkedHashMap) {
+							myImplementations.put(myImpl, (LinkedHashMap[]) value);
+						} else {
+							throw new InvalidParameterException("The starting values should be an array of LinkedHashMap instances!");
+						}
+					}
+				} else if (value instanceof String) {
+					LinkedHashMap<String,Object>[] startingValues = MetaModel.convertJSONStrToLinkedHashMapArray((String) value);
+					myImplementations.put(myImpl, startingValues);
+				} else {
+					throw new InvalidParameterException("The type of object in the values of the modelImplementations map should be arrays of LinkedHashMap instances or a JSON representation of this array!");
+				}
+			}
+		}
+		return myImplementations;
+	}
+	
+	
+	/**
+	 * Fit the meta-model.<p>
+	 * @param outputType the output type the model will be fitted to (e.g., volumeAlive_Coniferous)
+	 * @param modelImplementations a Map of List of strings that are the names of the ModelImplEnum constants
+	 * @return a boolean true if the model has converged or false otherwise
+	 * @see ModelImplEnum
+	 */
+	public boolean fitModel(String outputType, LinkedHashMap<String, Object> modelImplementations) {
+		if (outputType == null || !getPossibleOutputTypes().contains(outputType)) {
+			throw new InvalidParameterException("The outputType argument should be one of the possible output type (see the getPossibleOutputTypes() method)!");
+		}
+		if (modelImplementations == null || modelImplementations.isEmpty()) {
+			throw new InvalidParameterException("The modelImplementationStrings argument should be a Map!");
+		}
+		
+		LinkedHashMap<ModelImplEnum, LinkedHashMap<String, Object>[]> formattedModelImplementations = formatModelImplementationMap(modelImplementations);
+		
 		model = null; // reset the convergence to false
-		REpiceaLogManager.logMessage(MetaModelManager.LoggerName, Level.INFO, "Meta-model " + stratumGroup,
-				"----------- Modeling output type: " + outputType + " ----------------");
+		
+		REpiceaLogManager.logMessage(MetaModelManager.LoggerName, Level.INFO, "Meta-model " + stratumGroup, "----------- Modeling output type: " + outputType + " ----------------");
 		try {
 			List<InnerWorker> modelList = new ArrayList<InnerWorker>();
 
-			List<ModelImplEnum> myImplementations = new ArrayList<ModelImplEnum>();
-			myImplementations.add(ModelImplEnum.ChapmanRichards);
-			if (enableMixedModelImplementations) {
-				myImplementations.add(ModelImplEnum.ChapmanRichardsWithRandomEffect);
-			}
-			myImplementations.add(ModelImplEnum.ChapmanRichardsDerivative);
-			if (enableMixedModelImplementations) {
-				myImplementations.add(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect);
-			}
-			for (ModelImplEnum e : myImplementations) { // use the basic models first, i.e. those without random effects
-				InnerWorker w = new InnerWorker(getInnerModel(outputType, e));
+			for (ModelImplEnum e : formattedModelImplementations.keySet()) {
+				LinkedHashMap<String, Object>[] startingValues = formattedModelImplementations.get(e);
+				InnerWorker w = new InnerWorker(getInnerModel(outputType, e, startingValues));
 				w.start();
 				modelList.add(w);
 			}
@@ -478,7 +548,6 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 			model = selectedWorker.ami;
 			
 			lastFitTimeStamp = new Date(System.currentTimeMillis());
-//			System.out.println(model.getSummary());
 			return true;
 		} catch (Exception e1) {
 			e1.printStackTrace();
@@ -486,6 +555,8 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		}
 	}
 
+	
+	
 	/**
 	 * Provide a single prediction using the model parameters
 	 * 

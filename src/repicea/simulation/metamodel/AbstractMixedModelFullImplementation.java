@@ -18,6 +18,8 @@
  */
 package repicea.simulation.metamodel;
 
+import java.util.LinkedHashMap;
+
 import repicea.math.Matrix;
 import repicea.stats.data.StatisticalDataException;
 import repicea.stats.distributions.GaussianDistribution;
@@ -34,8 +36,8 @@ abstract class AbstractMixedModelFullImplementation extends AbstractModelImpleme
 	
 	GaussianDistribution randomEffectDistribution;
 	
-	AbstractMixedModelFullImplementation(String outputType, MetaModel metaModel) throws StatisticalDataException {
-		super(outputType, metaModel);
+	AbstractMixedModelFullImplementation(String outputType, MetaModel metaModel, LinkedHashMap<String, Object>[] startingValues) throws StatisticalDataException {
+		super(outputType, metaModel, startingValues);
 	}
 
 	@Override

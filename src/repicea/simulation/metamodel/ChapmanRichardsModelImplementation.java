@@ -36,8 +36,8 @@ class ChapmanRichardsModelImplementation extends AbstractModelImplementation {
 
 	final static List<String> PARAMETERS = Arrays.asList(new String[] {"b1", "b2", "b3", "rho", "sigma2"});
 		
-	ChapmanRichardsModelImplementation(String outputType, MetaModel model) throws StatisticalDataException {
-		super(outputType, model);
+	ChapmanRichardsModelImplementation(String outputType, MetaModel model, LinkedHashMap<String, Object>[] startingValues) throws StatisticalDataException {
+		super(outputType, model, startingValues);
 	}
 	
 	@Override
