@@ -19,7 +19,9 @@
  */
 package repicea.simulation.metamodel;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
@@ -60,13 +62,14 @@ public class ParametersMapUtilitiesTest {
 		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0.80", "0.995"});
 		 inputMap[3] = oMap;
 		 oMap = new LinkedHashMap<String, Object>();
-		 oMap.put(InputParametersMapKey.Parameter.name(), "sigma2");
+		 oMap.put(InputParametersMapKey.Parameter.name(), "sigma2_res");
 		 oMap.put(InputParametersMapKey.StartingValue.name(), 250 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
 		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0", "5000"});
 		 inputMap[4] = oMap;
 
-		Map<String, Map<FormattedParametersMapKey, Object>> result = ParametersMapUtilities.formatParametersMap(inputMap, ChapmanRichardsModelImplementation.PARAMETERS);
+		List<String> parameterNames = Arrays.asList(new String[] {"b1", "b2", "b3", AbstractModelImplementation.CORRELATION_PARM, AbstractModelImplementation.RESIDUAL_VARIANCE});
+		Map<String, Map<FormattedParametersMapKey, Object>> result = ParametersMapUtilities.formatParametersMap(inputMap, parameterNames);
 		Assert.assertEquals("Testing map size", 5, result.size());
 		Assert.assertEquals("Testing starting value", 0.02, (Double) result.get("b2").get(FormattedParametersMapKey.StartingValue), 1E-8);
 		UniformDistribution d = (UniformDistribution) result.get("b3").get(FormattedParametersMapKey.PriorDistribution);

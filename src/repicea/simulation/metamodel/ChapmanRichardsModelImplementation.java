@@ -1,7 +1,8 @@
 /*
- * This file is part of the repicea library.
+ * This file is part of the repicea-metamodels library.
  *
- * Copyright (C) 2009-2021 Mathieu Fortin for Rouge Epicea.
+ * Copyright (C) 2021-24 His Majesty the King in Right of Canada
+ * Author: Mathieu Fortin, Canadian Forest Service
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,15 +35,10 @@ import repicea.stats.distributions.GaussianDistribution;
  */
 class ChapmanRichardsModelImplementation extends AbstractModelImplementation {
 
-	final static List<String> PARAMETERS = Arrays.asList(new String[] {"b1", "b2", "b3", "rho", "sigma2"});
-		
 	ChapmanRichardsModelImplementation(String outputType, MetaModel model, LinkedHashMap<String, Object>[] startingValues) throws StatisticalDataException {
 		super(outputType, model, startingValues);
 	}
 	
-	@Override
-	List<String> getParameterNames() {return PARAMETERS;}
-
 	@Override
 	double getPrediction(double ageYr, double timeSinceBeginning, double r1, Matrix parameters) {
 		Matrix params = parameters == null ? getParameters() : parameters;
@@ -72,14 +68,6 @@ class ChapmanRichardsModelImplementation extends AbstractModelImplementation {
 		Matrix parmEst = new Matrix(lastIndex,1);
 		setFixedEffectStartingValuesFromParametersMap(parmEst);
 		
-//		parmEst.setValueAt(0, 0, 100d);
-//		parmEst.setValueAt(1, 0, 0.02);
-//		parmEst.setValueAt(2, 0, 2d);
-//		parmEst.setValueAt(indexCorrelationParameter, 0, .92);
-//		if (!isVarianceErrorTermAvailable) {
-//			parmEst.setValueAt(indexResidualErrorVariance, 0, 250d);
-//		}
-
 		Matrix varianceDiag = new Matrix(parmEst.m_iRows,1);
 		for (int i = 0; i < varianceDiag.m_iRows; i++) {
 			varianceDiag.setValueAt(i, 0, Math.pow(parmEst.getValueAt(i, 0) * coefVar, 2d));
@@ -115,11 +103,18 @@ class ChapmanRichardsModelImplementation extends AbstractModelImplementation {
 	}
 
 	@Override
+	List<String> getParameterNames() {
+		return Arrays.asList(isVarianceErrorTermAvailable ?
+				new String[] {"b1", "b2", "b3", AbstractModelImplementation.CORRELATION_PARM} :
+					new String[] {"b1", "b2", "b3", AbstractModelImplementation.CORRELATION_PARM, AbstractModelImplementation.RESIDUAL_VARIANCE});
+	}
+
+	@Override
 	public List<String> getOtherParameterNames() {
 		List<String> parameters = new ArrayList<String>();
 		parameters.add("rho");
 		if (!isVarianceErrorTermAvailable)
-			parameters.add("sigma2_res");
+			parameters.add(AbstractModelImplementation.RESIDUAL_VARIANCE);
 		return parameters;
 	}
 
@@ -151,13 +146,13 @@ class ChapmanRichardsModelImplementation extends AbstractModelImplementation {
 		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"1", "6"});
 		 inputMap[2] = oMap;
 		 oMap = new LinkedHashMap<String, Object>();
-		 oMap.put(InputParametersMapKey.Parameter.name(), "rho");
+		 oMap.put(InputParametersMapKey.Parameter.name(), AbstractModelImplementation.CORRELATION_PARM);
 		 oMap.put(InputParametersMapKey.StartingValue.name(), 0.92 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
 		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0.80", "0.995"});
 		 inputMap[3] = oMap;
 		 oMap = new LinkedHashMap<String, Object>();
-		 oMap.put(InputParametersMapKey.Parameter.name(), "sigma2");
+		 oMap.put(InputParametersMapKey.Parameter.name(), AbstractModelImplementation.RESIDUAL_VARIANCE);
 		 oMap.put(InputParametersMapKey.StartingValue.name(), 250 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
 		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0", "5000"});

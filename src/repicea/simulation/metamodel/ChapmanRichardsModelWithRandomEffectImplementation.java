@@ -1,7 +1,8 @@
 /*
- * This file is part of the repicea library.
+ * This file is part of the repicea-metamodels library.
  *
- * Copyright (C) 2009-2021 Mathieu Fortin for Rouge Epicea.
+ * Copyright (C) 2021-24 His Majesty the King in Right of Canada
+ * Author: Mathieu Fortin, Canadian Forest Service
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,19 +38,14 @@ import repicea.stats.estimators.mcmc.MetropolisHastingsPriorHandler;
  */
 class ChapmanRichardsModelWithRandomEffectImplementation extends AbstractMixedModelFullImplementation {
 
-	final static List<String> PARAMETERS = Arrays.asList(new String[] {"b1", "b2", "b3", "rho", "sigma2stratum"});
-
 	ChapmanRichardsModelWithRandomEffectImplementation(String outputType, MetaModel model, LinkedHashMap<String, Object>[] startingValues) throws StatisticalDataException {
 		super(outputType, model, startingValues);
 	}
 
 	@Override
-	List<String> getParameterNames() {return PARAMETERS;}
-	
-	@Override
 	public GaussianDistribution getStartingParmEst(double coefVar) {
 		indexCorrelationParameter = 3;
-		indexRandomEffectVariance = 4;
+		this.indexRandomEffectStandardDeviation = 4;
 		indexResidualErrorVariance = 5;
 		indexFirstRandomEffect = !isVarianceErrorTermAvailable ? 
 				indexResidualErrorVariance + 1 : 
@@ -57,18 +53,8 @@ class ChapmanRichardsModelWithRandomEffectImplementation extends AbstractMixedMo
 		
 		Matrix parmEst = new Matrix(indexFirstRandomEffect + dataBlockWrappers.size(),1);
 		setFixedEffectStartingValuesFromParametersMap(parmEst);
-
-//		parmEst.setValueAt(0, 0, 100d);
-//		parmEst.setValueAt(1, 0, 0.02);
-//		parmEst.setValueAt(2, 0, 2d);
-//		parmEst.setValueAt(indexCorrelationParameter, 0, .92);
-//		parmEst.setValueAt(indexRandomEffectVariance, 0, 200d);
-//		if (!isVarianceErrorTermAvailable) {
-//			parmEst.setValueAt(indexResidualErrorVariance, 0, 250d);
-//		}
-
 		for (int i = 0; i < dataBlockWrappers.size(); i++) {
-			parmEst.setValueAt(indexFirstRandomEffect + i, 0, 2 * Math.sqrt(parmEst.getValueAt(indexRandomEffectVariance, 0))); // 2 stands for the 97.5th percentile
+			parmEst.setValueAt(indexFirstRandomEffect + i, 0, 0); 
 		}
 		
 		fixedEffectsParameterIndices = new ArrayList<Integer>();
@@ -121,12 +107,19 @@ class ChapmanRichardsModelWithRandomEffectImplementation extends AbstractMixedMo
 	}
 
 	@Override
+	List<String> getParameterNames() {
+		return Arrays.asList(isVarianceErrorTermAvailable ?
+				new String[] {"b1", "b2", "b3", AbstractModelImplementation.CORRELATION_PARM, AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD} :
+					new String[] {"b1", "b2", "b3", AbstractModelImplementation.CORRELATION_PARM, AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD, AbstractModelImplementation.RESIDUAL_VARIANCE});
+	}
+
+	@Override
 	public List<String> getOtherParameterNames() {
 		List<String> parameters = new ArrayList<String>();
-		parameters.add("rho");
-		parameters.add("sigma2_u");
+		parameters.add(AbstractModelImplementation.CORRELATION_PARM);
+		parameters.add(AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD);
 		if (!isVarianceErrorTermAvailable)
-			parameters.add("sigma2_res");
+			parameters.add(AbstractModelImplementation.RESIDUAL_VARIANCE);
 		int nbRandomEffects = mh.getFinalParameterEstimates().m_iRows - getEffectList().size() - parameters.size();
 		for (int i = 1; i <= nbRandomEffects; i++) {
 			parameters.add("u_" + i);
@@ -142,20 +135,9 @@ class ChapmanRichardsModelWithRandomEffectImplementation extends AbstractMixedMo
 	@Override
 	public void setPriorDistributions(MetropolisHastingsPriorHandler handler) {
 		super.setPriorDistributions(handler);
-		ContinuousDistribution variancePrior = (ContinuousDistribution) parametersMap.get("sigma2stratum").get(FormattedParametersMapKey.PriorDistribution);
-
-//		handler.addFixedEffectDistribution(new UniformDistribution(0, 400), 0);
-//		handler.addFixedEffectDistribution(new UniformDistribution(0.0001, 0.1), 1);
-//		handler.addFixedEffectDistribution(new UniformDistribution(1, 6), 2);
-//		handler.addFixedEffectDistribution(new UniformDistribution(0.80, 0.995), indexCorrelationParameter);
-//		ContinuousDistribution variancePrior = new UniformDistribution(0, 10000);
-//		handler.addFixedEffectDistribution(variancePrior, indexRandomEffectVariance);
-//		if (!isVarianceErrorTermAvailable) {
-//			ContinuousDistribution resVariancePrior = new UniformDistribution(0, 5000);
-//			handler.addFixedEffectDistribution(resVariancePrior, indexResidualErrorVariance);
-//		}
+		ContinuousDistribution stdPrior = (ContinuousDistribution) parametersMap.get(AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD).get(FormattedParametersMapKey.PriorDistribution);
 		for (int i = 0; i < dataBlockWrappers.size(); i++) {
-			handler.addRandomEffectVariance(new GaussianDistribution(0, 1), variancePrior, indexFirstRandomEffect + i);
+			handler.addRandomEffectStandardDeviation(new GaussianDistribution(0, 1), stdPrior, indexFirstRandomEffect + i);
 		}
 	}
 
@@ -182,19 +164,19 @@ class ChapmanRichardsModelWithRandomEffectImplementation extends AbstractMixedMo
 		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"1", "6"});
 		 inputMap[2] = oMap;
 		 oMap = new LinkedHashMap<String, Object>();
-		 oMap.put(InputParametersMapKey.Parameter.name(), "rho");
+		 oMap.put(InputParametersMapKey.Parameter.name(), AbstractModelImplementation.CORRELATION_PARM);
 		 oMap.put(InputParametersMapKey.StartingValue.name(), 0.92 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
 		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0.80", "0.995"});
 		 inputMap[3] = oMap;
 		 oMap = new LinkedHashMap<String, Object>();
-		 oMap.put(InputParametersMapKey.Parameter.name(), "sigma2stratum");
-		 oMap.put(InputParametersMapKey.StartingValue.name(), 200 + "");
+		 oMap.put(InputParametersMapKey.Parameter.name(), AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD);
+		 oMap.put(InputParametersMapKey.StartingValue.name(), 15 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
-		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0", "10000"});
+		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0", "100"});
 		 inputMap[4] = oMap;
 		 oMap = new LinkedHashMap<String, Object>();
-		 oMap.put(InputParametersMapKey.Parameter.name(), "sigma2");
+		 oMap.put(InputParametersMapKey.Parameter.name(), AbstractModelImplementation.RESIDUAL_VARIANCE);
 		 oMap.put(InputParametersMapKey.StartingValue.name(), 250 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
 		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0", "5000"});

@@ -21,7 +21,9 @@
 
 package repicea.simulation.metamodel;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -169,26 +171,76 @@ public class MetaModelTest {
 	@SuppressWarnings("unchecked")
 	@Test
 	public void test07JSONParameterisation() throws MetaModelException {
-		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[5];
+		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[4];
 		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "710", "Uniform", new String[] {"0", "2000"}});
 		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.008", "Uniform", new String[] {"0.00001", "0.05"}});
 		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "1.4", "Uniform", new String[] {"0.8", "6"}});
 		parms[3] = MetaModel.convertParameters(new Object[] {"rho", "0.99", "Uniform", new String[] {"0.8", "0.995"}});
-		parms[4] = MetaModel.convertParameters(new Object[] {"sigma2stratum", "5300", "Uniform", new String[] {"0", "15000"}});
 
 		Map<String, Object> args = new HashMap<String, Object>();
 		args.put(JsonWriter.TYPE, false);
 		String jsonStr = JsonWriter.objectToJson(parms, args);
 		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
-		startingValuesMap.put(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect.name(), jsonStr);
+		startingValuesMap.put(ModelImplEnum.ChapmanRichardsDerivative.name(), jsonStr);
 		System.out.println(MetaModelInstance.getPossibleOutputTypes());
 				
 		MetaModelInstance.fitModel("AliveVolume_AllSpecies", startingValuesMap);
 		Assert.assertEquals("Testing final sample size", 400, MetaModelInstance.model.mh.convertMetropolisHastingsSampleToDataSet().getNumberOfObservations());
 	}
 
+	@SuppressWarnings("unchecked")
+	@Test
+	public void test08ExponentialModelForStemDensity() throws IOException {
+		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_6OUEST_STR_ME1_6OUEST_NoChange_AliveVolume_AllSpecies.zml";
+		MetaModel m = MetaModel.Load(filename);
+		m.getMetropolisHastingsParameters().nbBurnIn = 1000;
+		m.getMetropolisHastingsParameters().nbAcceptedRealizations = 11000;
+		m.getMetropolisHastingsParameters().nbInitialGrid = 0;
+		m.getMetropolisHastingsParameters().oneEach = 25;
 
-	
+		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[3];
+		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "2000", "Uniform", new String[] {"0", "8000"}});
+		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.005", "Uniform", new String[] {"0.00001", "0.05"}});
+		parms[2] = MetaModel.convertParameters(new Object[] {"rho", "0.99", "Uniform", new String[] {"0.8", "0.995"}});
+
+		Map<String, Object> args = new HashMap<String, Object>();
+		args.put(JsonWriter.TYPE, false);
+		String jsonStr = JsonWriter.objectToJson(parms, args);
+		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
+		startingValuesMap.put(ModelImplEnum.Exponential.name(), jsonStr);
+		m.fitModel("AliveStemDensity_AllSpecies", startingValuesMap);
+		System.out.println(m.getSummary());
+		Assert.assertEquals("Testing b1", 1225d, m.getFinalParameterEstimates().getValueAt(0, 0), 50d);
+		Assert.assertEquals("Testing b2", 0.0029, m.getFinalParameterEstimates().getValueAt(1, 0), 0.001);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void test09ExponentialModelWithRandomEffectForStemDensity() throws IOException {
+		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_6OUEST_STR_ME1_6OUEST_NoChange_AliveVolume_AllSpecies.zml";
+		MetaModel m = MetaModel.Load(filename);
+		m.getMetropolisHastingsParameters().nbBurnIn = 1000;
+		m.getMetropolisHastingsParameters().nbAcceptedRealizations = 11000;
+		m.getMetropolisHastingsParameters().nbInitialGrid = 0;
+		m.getMetropolisHastingsParameters().oneEach = 25;
+
+		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[4];
+		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "2000", "Uniform", new String[] {"0", "8000"}});
+		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.005", "Uniform", new String[] {"0.00001", "0.05"}});
+		parms[2] = MetaModel.convertParameters(new Object[] {AbstractModelImplementation.CORRELATION_PARM, "0.99", "Uniform", new String[] {"0.8", "0.995"}});
+		parms[3] = MetaModel.convertParameters(new Object[] {AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD, "1000", "Uniform", new String[] {"0", "3000"}});
+
+		Map<String, Object> args = new HashMap<String, Object>();
+		args.put(JsonWriter.TYPE, false);
+		String jsonStr = JsonWriter.objectToJson(parms, args);
+		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
+		startingValuesMap.put(ModelImplEnum.ExponentialWithRandomEffect.name(), jsonStr);
+		m.fitModel("AliveStemDensity_AllSpecies", startingValuesMap);
+		System.out.println(m.getSummary());
+		Assert.assertEquals("Testing b2", 0.0029, m.getFinalParameterEstimates().getValueAt(1, 0), 0.001);
+		Assert.assertEquals("Testing rho", 0.83, m.getFinalParameterEstimates().getValueAt(2, 0), 0.02);
+	}
+
 	@SuppressWarnings("unchecked")
 	public static void main(String[] args) throws IOException, MetaModelException {
 //		AbstractModelImplementation.EstimateResidualVariance = true;
@@ -201,51 +253,57 @@ public class MetaModelTest {
 		sh.setFormatter(new SimpleFormatter());
 		REpiceaLogManager.getLogger(MetaModelManager.LoggerName).addHandler(sh);
 		
-//		String path = ObjectUtility.getPackagePath(MetaModelTest.class);
-//		List<String> vegPotList = new ArrayList<String>();
-////		vegPotList.add("MS2");
-////		vegPotList.add("RE1");
-////		vegPotList.add("RE2");
-////		vegPotList.add("RE3");
-//		vegPotList.add("RS2");
-////		vegPotList.add("RS3");
-//		
-//		List<String> outputTypes = new ArrayList<String>();
-//		outputTypes.add("AliveVolume_AllSpecies");
-//
-//		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[5];
-//		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "710", "Uniform", new String[] {"0", "2000"}});
-//		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.008", "Uniform", new String[] {"0.00001", "0.05"}});
-//		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "1.4", "Uniform", new String[] {"0.8", "6"}});
-//		parms[3] = MetaModel.convertParameters(new Object[] {"rho", "0.99", "Uniform", new String[] {"0.8", "0.995"}});
-//		parms[4] = MetaModel.convertParameters(new Object[] {"sigma2stratum", "5300", "Uniform", new String[] {"0", "15000"}});
-//		
-//		for (String vegPot : vegPotList) {
-//			String metaModelFilename = path + "QC_FMU02664_" + vegPot + "_NoChange_root.zml";
-//			for (String outputType : outputTypes) {
-//				MetaModel m = MetaModel.Load(metaModelFilename);
-//				m.setStartingValuesForThisModelImplementation(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect, parms);
-//				m.mhSimParms.nbInitialGrid = 0;
-//				m.mhSimParms.nbBurnIn = 50000;
-//				m.mhSimParms.nbAcceptedRealizations = 1000000 + m.mhSimParms.nbBurnIn;
-//				boolean enabledMixedModelImplementation = vegPot.equals("RE1") ? false : true;
-//				m.fitModel(outputType, enabledMixedModelImplementation);
-////				UNCOMMENT THIS LINE TO UPDATE THE META MODELS
-////				m.save(path + "QC_FMU02664_" + vegPot + "_NoChange_AliveVolume_AllSpecies.zml");
-//				m.exportMetropolisHastingsSample(outputPath + File.separator + vegPot + "_" + outputType + "MHSample.csv");
-//				m.exportFinalDataSet(outputPath + File.separator + vegPot + "_" + outputType + ".csv");
-//				System.out.println(m.getModelComparison().toString());
-//				System.out.println(m.getSummary());
-//				m.getModelComparison().save(outputPath + File.separator + vegPot + "_" + outputType + "ModelComparison.csv");
-//			}
-//		}
-		String jsonStr = "[{\"Parameter\":\"b1\",\"StartingValue\":100,\"Distribution\":\"Uniform\",\"DistParms\":[\"0\",\"300\"]},{\"Parameter\":\"b2\",\"StartingValue\":0.007,\"Distribution\":\"Uniform\",\"DistParms\":[\"0.0001\",\"0.02\"]},{\"Parameter\":\"b3\",\"StartingValue\":2,\"Distribution\":\"Uniform\",\"DistParms\":[\"1\",\"6\"]},{\"Parameter\":\"rho\",\"StartingValue\":0.98,\"Distribution\":\"Uniform\",\"DistParms\":[\"0.8\",\"0.995\"]},{\"Parameter\":\"sigma2stratum\",\"StartingValue\":500,\"Distribution\":\"Uniform\",\"DistParms\":[\"0\",\"1500\"]}]";
-		MetaModel m = MetaModel.Load(outputPath + "FittedMetamodel_Coniferous_AllAlive_FMU02664.zml");
-		System.out.println(m.getSummary());
-		LinkedHashMap<String, Object> models = new LinkedHashMap<String, Object>();
-		models.put(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect.name(), jsonStr);
-		m.fitModel(m.getSelectedOutputType(), models);
+		String path = ObjectUtility.getPackagePath(MetaModelTest.class);
+		List<String> vegPotList = new ArrayList<String>();
+//		vegPotList.add("MS2");
+//		vegPotList.add("RE1");
+//		vegPotList.add("RE2");
+//		vegPotList.add("RE3");
+		vegPotList.add("RS2");
+//		vegPotList.add("RS3");
 		
-		int u = 0;
+		List<String> outputTypes = new ArrayList<String>();
+		outputTypes.add("AliveVolume_AllSpecies");
+
+		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[5];
+		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "834", "Uniform", new String[] {"0", "2000"}});
+		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.0078", "Uniform", new String[] {"0.00001", "0.05"}});
+		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "2.0", "Uniform", new String[] {"0.8", "6"}});
+		parms[3] = MetaModel.convertParameters(new Object[] {"rho", "0.97", "Uniform", new String[] {"0.8", "0.995"}});
+		parms[4] = MetaModel.convertParameters(new Object[] {"sigma_u", "50", "Uniform", new String[] {"0", "200"}});
+		LinkedHashMap<String, Object> implementations = new LinkedHashMap<String, Object>();
+		implementations.put(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect.name(), parms);
+		parms = new LinkedHashMap[4];
+		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "710", "Uniform", new String[] {"0", "2000"}});
+		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.008", "Uniform", new String[] {"0.00001", "0.05"}});
+		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "1.4", "Uniform", new String[] {"0.8", "6"}});
+		parms[3] = MetaModel.convertParameters(new Object[] {"rho", "0.99", "Uniform", new String[] {"0.8", "0.995"}});
+		implementations.put(ModelImplEnum.ChapmanRichardsDerivative.name(), parms);
+		
+		for (String vegPot : vegPotList) {
+			String metaModelFilename = path + "QC_FMU02664_" + vegPot + "_NoChange_root.zml";
+			for (String outputType : outputTypes) {
+				MetaModel m = MetaModel.Load(metaModelFilename);
+				m.mhSimParms.nbInitialGrid = 0;
+				m.mhSimParms.nbBurnIn = 50000;
+				m.mhSimParms.nbAcceptedRealizations = 1000000 + m.mhSimParms.nbBurnIn;
+				m.fitModel(outputType, implementations);
+//				UNCOMMENT THIS LINE TO UPDATE THE META MODELS
+//				m.save(path + "QC_FMU02664_" + vegPot + "_NoChange_AliveVolume_AllSpecies.zml");
+				m.exportMetropolisHastingsSample(outputPath + File.separator + vegPot + "_" + outputType + "MHSample.csv");
+				m.exportFinalDataSet(outputPath + File.separator + vegPot + "_" + outputType + ".csv");
+				System.out.println(m.getModelComparison().toString());
+				System.out.println(m.getSummary());
+//				m.getModelComparison().save(outputPath + File.separator + vegPot + "_" + outputType + "ModelComparison.csv");
+			}
+		}
+//		String jsonStr = "[{\"Parameter\":\"b1\",\"StartingValue\":5500,\"Distribution\":\"Uniform\",\"DistParms\":[\"0\",\"300\"]},{\"Parameter\":\"b2\",\"StartingValue\":0.007,\"Distribution\":\"Uniform\",\"DistParms\":[\"0.0001\",\"0.02\"]},{\"Parameter\":\"b3\",\"StartingValue\":2,\"Distribution\":\"Uniform\",\"DistParms\":[\"1\",\"6\"]},{\"Parameter\":\"rho\",\"StartingValue\":0.98,\"Distribution\":\"Uniform\",\"DistParms\":[\"0.8\",\"0.995\"]},{\"Parameter\":\"sigma_u\",\"StartingValue\":10,\"Distribution\":\"Uniform\",\"DistParms\":[\"0\",\"150\"]}]";
+//		MetaModel m = MetaModel.Load(outputPath + "FittedMetamodel_Coniferous_AllAlive_FMU02664.zml");
+//		System.out.println(m.getSummary());
+//		LinkedHashMap<String, Object> models = new LinkedHashMap<String, Object>();
+//		models.put(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect.name(), jsonStr);
+//		m.fitModel(m.getSelectedOutputType(), models);
+//		System.out.println(m.getSummary());
+//		int u = 0;
 	}
 }

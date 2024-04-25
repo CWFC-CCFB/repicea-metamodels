@@ -1,7 +1,7 @@
 /*
  * This file is part of the repicea-metamodels library.
  *
- * Copyright (C) 2021-24 His Majesty the King in Right of Canada
+ * Copyright (C) 2024 His Majesty the King in Right of Canada
  * Author: Mathieu Fortin, Canadian Forest Service
  *
  * This library is free software; you can redistribute it and/or
@@ -33,20 +33,34 @@ import repicea.stats.distributions.GaussianDistribution;
 import repicea.stats.estimators.mcmc.MetropolisHastingsPriorHandler;
 
 /**
- * An implementation of the derivative form of the Chapman-Richards model including random effects.
- * @author Mathieu Fortin - October 2021
+ * An implementation of the exponential model with random effects.
+ * @author Mathieu Fortin - April 2024
  */
-class ChapmanRichardsDerivativeModelWithRandomEffectImplementation extends AbstractMixedModelFullImplementation {
-	
-	ChapmanRichardsDerivativeModelWithRandomEffectImplementation(String outputType, MetaModel model, LinkedHashMap<String, Object>[] startingValues) throws StatisticalDataException {
+class ExponentialModelWithRandomEffectImplementation extends AbstractMixedModelFullImplementation {
+
+	ExponentialModelWithRandomEffectImplementation(String outputType, MetaModel model, LinkedHashMap<String, Object>[] startingValues) throws StatisticalDataException {
 		super(outputType, model, startingValues);
 	}
 	
 	@Override
+	double getPrediction(double ageYr, double timeSinceBeginning, double r1, Matrix parameters) {
+		Matrix params = parameters == null ? getParameters() : parameters; 
+		
+		double b1 = params.getValueAt(0, 0);
+		double b2 = params.getValueAt(1, 0);
+		double pred = (b1 + r1) * Math.exp(-b2 * ageYr);
+		return pred;
+	}
+
+	@Override
 	public GaussianDistribution getStartingParmEst(double coefVar) {
-		indexCorrelationParameter = 3;
-		indexRandomEffectStandardDeviation = 4;
-		indexResidualErrorVariance = 5;
+		fixedEffectsParameterIndices = new ArrayList<Integer>();
+		fixedEffectsParameterIndices.add(0);
+		fixedEffectsParameterIndices.add(1);
+		
+		indexCorrelationParameter = 2;
+		indexRandomEffectStandardDeviation = 3;
+		indexResidualErrorVariance = 4;
 		indexFirstRandomEffect = !isVarianceErrorTermAvailable ? 
 				indexResidualErrorVariance + 1 : 
 					indexResidualErrorVariance;
@@ -57,11 +71,6 @@ class ChapmanRichardsDerivativeModelWithRandomEffectImplementation extends Abstr
 			parmEst.setValueAt(indexFirstRandomEffect + i, 0, 0);
 		}
 		
-		fixedEffectsParameterIndices = new ArrayList<Integer>();
-		fixedEffectsParameterIndices.add(0);
-		fixedEffectsParameterIndices.add(1);
-		fixedEffectsParameterIndices.add(2);
-
 		Matrix varianceDiag = new Matrix(parmEst.m_iRows,1);
 		for (int i = 0; i < varianceDiag.m_iRows; i++) {
 			double varianceSampler = i < indexFirstRandomEffect ?
@@ -76,32 +85,18 @@ class ChapmanRichardsDerivativeModelWithRandomEffectImplementation extends Abstr
 	}
 
 
-	@Override
-	double getPrediction(double ageYr, double timeSinceBeginning, double r1, Matrix parameters) {
-		Matrix params = parameters == null ? getParameters() : parameters; 
-		
-		double b1 = params.getValueAt(0, 0);
-		double b2 = params.getValueAt(1, 0);
-		double b3 = params.getValueAt(2, 0);
-		double pred = (b1 + r1) * Math.exp(-b2 * ageYr) * Math.pow(1 - Math.exp(-b2 * ageYr), b3);
-		return pred;
-	}
 
 
 	@Override
 	Matrix getFirstDerivative(double ageYr, double timeSinceBeginning, double r1) {
 		double b1 = getParameters().getValueAt(0, 0);
 		double b2 = getParameters().getValueAt(1, 0);
-		double b3 = getParameters().getValueAt(2, 0);
 		
 		double exp = Math.exp(-b2 * ageYr);
-		double root = 1 - exp;
 		
-		Matrix derivatives = new Matrix(3,1);
-		derivatives.setValueAt(0, 0, exp * Math.pow(root, b3));
-		derivatives.setValueAt(1, 0, - ageYr * b1 * exp * Math.pow(root, b3) + 
-				b1 * exp * b3 * Math.pow(root, b3 - 1) * exp * ageYr);
-		derivatives.setValueAt(2, 0, b1 * exp * Math.pow(root, b3) * Math.log(root));
+		Matrix derivatives = new Matrix(2,1);
+		derivatives.setValueAt(0, 0, exp);
+		derivatives.setValueAt(1, 0, - ageYr * (b1 + r1) * exp);
 		return derivatives;
 	}
 
@@ -110,14 +105,14 @@ class ChapmanRichardsDerivativeModelWithRandomEffectImplementation extends Abstr
 
 	@Override
 	public List<String> getEffectList() {
-		return Arrays.asList(new String[] {"b1","b2","b3"});
+		return Arrays.asList(new String[] {"b1","b2"});
 	}
 
 	@Override
 	List<String> getParameterNames() {
 		return Arrays.asList(isVarianceErrorTermAvailable ?
-				new String[] {"b1", "b2", "b3", AbstractModelImplementation.CORRELATION_PARM, AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD} :
-					new String[] {"b1", "b2", "b3", AbstractModelImplementation.CORRELATION_PARM, AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD, AbstractModelImplementation.RESIDUAL_VARIANCE});
+				new String[] {"b1", "b2", AbstractModelImplementation.CORRELATION_PARM, AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD} :
+					new String[] {"b1", "b2", AbstractModelImplementation.CORRELATION_PARM, AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD, AbstractModelImplementation.RESIDUAL_VARIANCE});
 	}
 
 	@Override
@@ -127,10 +122,6 @@ class ChapmanRichardsDerivativeModelWithRandomEffectImplementation extends Abstr
 		parameters.add(AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD);
 		if (!isVarianceErrorTermAvailable)
 			parameters.add(AbstractModelImplementation.RESIDUAL_VARIANCE);
-//		int nbRandomEffects = mh.getFinalParameterEstimates().m_iRows - getEffectList().size() - parameters.size();
-//		for (int i = 1; i <= nbRandomEffects; i++) {
-//			parameters.add("u_" + i);
-//		}
 		for (AbstractDataBlockWrapper w : dataBlockWrappers) {
 			parameters.add("u_" + w.blockId.substring(0, w.blockId.indexOf("_")));
 		}
@@ -139,7 +130,7 @@ class ChapmanRichardsDerivativeModelWithRandomEffectImplementation extends Abstr
 
 	@Override
 	public String getModelDefinition() {
-		return "y ~ (b1 + u_i)*exp(-b2*t)*(1-exp(-b2*t))^b3";
+		return "y ~ (b1 + u_i)*exp(-b2*t)";
 	}
 
 	@Override
@@ -154,43 +145,37 @@ class ChapmanRichardsDerivativeModelWithRandomEffectImplementation extends Abstr
 	@SuppressWarnings("unchecked")
 	@Override
 	LinkedHashMap<String, Object>[] getDefaultParameters() {
-		 LinkedHashMap<String, Object>[] inputMap = new LinkedHashMap[6];
+		 LinkedHashMap<String, Object>[] inputMap = new LinkedHashMap[5];
 		 LinkedHashMap<String, Object> oMap = new LinkedHashMap<String, Object>();
 		 oMap.put(InputParametersMapKey.Parameter.name(), "b1");
-		 oMap.put(InputParametersMapKey.StartingValue.name(), 1000 + "");
+		 oMap.put(InputParametersMapKey.StartingValue.name(), 2000 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
-		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0", "2000"});
+		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0", "8000"});
 		 inputMap[0] = oMap;
 		 oMap = new LinkedHashMap<String, Object>();
 		 oMap.put(InputParametersMapKey.Parameter.name(), "b2");
-		 oMap.put(InputParametersMapKey.StartingValue.name(), 0.02 + "");
+		 oMap.put(InputParametersMapKey.StartingValue.name(), 0.005 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
 		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0.00001", "0.05"});
 		 inputMap[1] = oMap;
-		 oMap = new LinkedHashMap<String, Object>();
-		 oMap.put(InputParametersMapKey.Parameter.name(), "b3");
-		 oMap.put(InputParametersMapKey.StartingValue.name(), 2 + "");
-		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
-		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0.8", "6"});
-		 inputMap[2] = oMap;
 		 oMap = new LinkedHashMap<String, Object>();
 		 oMap.put(InputParametersMapKey.Parameter.name(), AbstractModelImplementation.CORRELATION_PARM);
 		 oMap.put(InputParametersMapKey.StartingValue.name(), 0.92 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
 		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0.80", "0.995"});
-		 inputMap[3] = oMap;
+		 inputMap[2] = oMap;
 		 oMap = new LinkedHashMap<String, Object>();
 		 oMap.put(InputParametersMapKey.Parameter.name(), AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD);
-		 oMap.put(InputParametersMapKey.StartingValue.name(), 30 + "");
+		 oMap.put(InputParametersMapKey.StartingValue.name(), 1000 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
-		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0", "125"});
-		 inputMap[4] = oMap;
+		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0", "3000"});
+		 inputMap[3] = oMap;
 		 oMap = new LinkedHashMap<String, Object>();
 		 oMap.put(InputParametersMapKey.Parameter.name(), AbstractModelImplementation.RESIDUAL_VARIANCE);
-		 oMap.put(InputParametersMapKey.StartingValue.name(), 250 + "");
+		 oMap.put(InputParametersMapKey.StartingValue.name(), 10000 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
-		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0", "5000"});
-		 inputMap[5] = oMap;
+		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0", "20000"});
+		 inputMap[4] = oMap;
 		 return inputMap;
 	}
 

@@ -1,7 +1,8 @@
 /*
- * This file is part of the repicea library.
+ * This file is part of the repicea-metamodels library.
  *
- * Copyright (C) 2009-2021 Mathieu Fortin for Rouge Epicea.
+ * Copyright (C) 2021-24 His Majesty the King in Right of Canada
+ * Author: Mathieu Fortin, Canadian Forest Service
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,8 +31,10 @@ import repicea.stats.distributions.GaussianDistribution;
  * @author Mathieu Fortin - October 2021
  */
 abstract class AbstractMixedModelFullImplementation extends AbstractModelImplementation {
-
-	int indexRandomEffectVariance;
+	
+	protected static final String RANDOM_EFFECT_STD = "sigma_u";
+	
+	int indexRandomEffectStandardDeviation;
 	int indexFirstRandomEffect;
 	
 	GaussianDistribution randomEffectDistribution;
@@ -43,14 +46,20 @@ abstract class AbstractMixedModelFullImplementation extends AbstractModelImpleme
 	@Override
 	protected double getLogLikelihoodForThisBlock(Matrix parameters, int i) {
 		AbstractDataBlockWrapper dbw = dataBlockWrappers.get(i);
-		dbw.setParameterValue(0, parameters.getValueAt(indexFirstRandomEffect + i, 0));
+		double randomEffect = parameters.getValueAt(indexFirstRandomEffect + i, 0);
+//		if (randomEffect != 0d) {
+//			int u = 0;
+//		}
+		dbw.setParameterValue(0, randomEffect);
 		return dbw.getLogLikelihood();
 	}	
 	
 	protected double getVarianceDueToRandomEffect(double ageYr, double timeSinceBeginning) {		
-		double randomEffectVariance = getParameters().getValueAt(this.indexRandomEffectVariance , 0);
+		double randomEffectStandardDeviation = getParameters().getValueAt(indexRandomEffectStandardDeviation, 0);
 		double value = this.getFirstDerivative(ageYr, timeSinceBeginning, 0.0).getValueAt(0, 0);
 		
-		return value * value * randomEffectVariance;   
+		return value * value * randomEffectStandardDeviation * randomEffectStandardDeviation;   
 	}
+	
+	
 }
