@@ -1,7 +1,8 @@
 /*
- * This file is part of the repicea library.
+ * This file is part of the repicea-metamodels library.
  *
- * Copyright (C) 2009-2021 Mathieu Fortin for Rouge Epicea.
+ * Copyright (C) 2021-24 His Majesty the King in Right of Canada
+ * Author: Mathieu Fortin, Canadian Forest Service
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,6 +53,9 @@ import repicea.stats.model.StatisticalModel;
  */
 abstract class AbstractModelImplementation implements StatisticalModel, MetropolisHastingsCompatibleModel, Runnable {
 
+	protected static final String RESIDUAL_VARIANCE = "sigma2_res";
+	protected static final String CORRELATION_PARM = "rho";
+	
 	/**
 	 * A nested class to handle blocks of repeated measurements.
 	 * @author Mathieu Fortin - November 2021
@@ -121,6 +125,9 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		EnumMap.put(ChapmanRichardsModelWithRandomEffectImplementation.class, ModelImplEnum.ChapmanRichardsWithRandomEffect);
 		EnumMap.put(ChapmanRichardsDerivativeModelImplementation.class, ModelImplEnum.ChapmanRichardsDerivative);
 		EnumMap.put(ChapmanRichardsDerivativeModelWithRandomEffectImplementation.class, ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect);
+		EnumMap.put(ExponentialModelImplementation.class, ModelImplEnum.Exponential);
+		EnumMap.put(ExponentialModelWithRandomEffectImplementation.class, ModelImplEnum.ExponentialWithRandomEffect.Exponential);
+		
 	}
 	
 	static boolean EstimateResidualVariance = false;  

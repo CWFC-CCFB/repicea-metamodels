@@ -156,16 +156,20 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	 * <li> ChapmanRichardsWithRandomEffect
 	 * <li> ChapmanRichardsDerivative
 	 * <li> ChapmanRichardsDerivativeWithRandomEffect
+	 * <li> Exponential
+	 * <li> ExponentialWithRandomEffect
 	 * </ul>
 	 */
 	public static enum ModelImplEnum {
 		ChapmanRichards(true), 
 		ChapmanRichardsWithRandomEffect(false), 
 		ChapmanRichardsDerivative(true),
-		ChapmanRichardsDerivativeWithRandomEffect(false);
+		ChapmanRichardsDerivativeWithRandomEffect(false),
+		Exponential(true),
+		ExponentialWithRandomEffect(false);
 
 		private static List<ModelImplEnum> ModelsWithoutRandomEffects;
-		private static Map<ModelImplEnum, ModelImplEnum> MatchingModelsWithRandomEffects;
+//		private static Map<ModelImplEnum, ModelImplEnum> MatchingModelsWithRandomEffects;
 
 		final boolean modelWithoutRandomEffect;
 
@@ -185,19 +189,19 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 			return ModelsWithoutRandomEffects;
 		}
 
-		private static Map<ModelImplEnum, ModelImplEnum> getMatchingModelsWithRandomEffects() {
-			if (MatchingModelsWithRandomEffects == null) {
-				MatchingModelsWithRandomEffects = new HashMap<ModelImplEnum, ModelImplEnum>();
-				MatchingModelsWithRandomEffects.put(ChapmanRichards, ChapmanRichardsWithRandomEffect);
-				MatchingModelsWithRandomEffects.put(ChapmanRichardsDerivative,
-						ChapmanRichardsDerivativeWithRandomEffect);
-			}
-			return MatchingModelsWithRandomEffects;
-		}
-
-		public static ModelImplEnum getMatchingModelWithRandomEffects(ModelImplEnum modelImplEnum) {
-			return getMatchingModelsWithRandomEffects().get(modelImplEnum);
-		}
+//		private static Map<ModelImplEnum, ModelImplEnum> getMatchingModelsWithRandomEffects() {
+//			if (MatchingModelsWithRandomEffects == null) {
+//				MatchingModelsWithRandomEffects = new HashMap<ModelImplEnum, ModelImplEnum>();
+//				MatchingModelsWithRandomEffects.put(ChapmanRichards, ChapmanRichardsWithRandomEffect);
+//				MatchingModelsWithRandomEffects.put(ChapmanRichardsDerivative,
+//						ChapmanRichardsDerivativeWithRandomEffect);
+//			}
+//			return MatchingModelsWithRandomEffects;
+//		}
+//
+//		public static ModelImplEnum getMatchingModelWithRandomEffects(ModelImplEnum modelImplEnum) {
+//			return getMatchingModelsWithRandomEffects().get(modelImplEnum);
+//		}
 
 	}
 
@@ -377,6 +381,12 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		case ChapmanRichardsDerivativeWithRandomEffect:
 			model = new ChapmanRichardsDerivativeModelWithRandomEffectImplementation(outputType, this, startingValues);
 			break;
+		case Exponential:
+			model = new ExponentialModelImplementation(outputType, this, startingValues);
+			break;
+		case ExponentialWithRandomEffect:
+			model = new ExponentialModelWithRandomEffectImplementation(outputType, this, startingValues);
+			break;
 		default:
 			throw new InvalidParameterException("This ModelImplEnum " + modelImplEnum.name() + " has not been implemented yet!");
 		}
@@ -404,7 +414,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	static class InnerWorker extends Thread implements Comparable<InnerWorker> {
 
 		final AbstractModelImplementation ami;
-		double prob;
+//		double prob;
 
 		InnerWorker(AbstractModelImplementation ami) {
 			super(ami);
@@ -414,9 +424,16 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 
 		@Override
 		public int compareTo(InnerWorker o) {
-			if (prob > o.prob) {
+//			if (prob > o.prob) {
+//				return -1;
+//			} else if (prob == o.prob) {
+//				return 0;
+//			} else {
+//				return 1;
+//			}
+			if (ami.mh.getLogPseudomarginalLikelihood() > o.ami.mh.getLogPseudomarginalLikelihood()) {
 				return -1;
-			} else if (prob == o.prob) {
+			} else if (ami.mh.getLogPseudomarginalLikelihood() == o.ami.mh.getLogPseudomarginalLikelihood()) {
 				return 0;
 			} else {
 				return 1;
@@ -425,25 +442,35 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	}
 
 	private InnerWorker performModelSelection(List<InnerWorker> innerWorkers) {
-		double sumProb = 0;
+//		double sumProb = 0;
 		List<InnerWorker> newList = new ArrayList<InnerWorker>();
+//		for (InnerWorker w : innerWorkers) {
+//			if (w.ami.hasConverged()) {
+//				newList.add(w);
+//				sumProb += Math.exp(w.ami.mh.getLogPseudomarginalLikelihood());
+//				REpiceaLogManager.logMessage(MetaModelManager.LoggerName, Level.INFO, "Meta-model " + stratumGroup,
+//						"Result for the implementation " + w.ami.getModelImplementation().name());
+//			}
+//		}
+//		DataSet d = new DataSet(Arrays.asList(new String[] { "ModelImplementation", "LPML", "Prob" }));
+//		for (InnerWorker w : newList) {
+//			w.prob = Math.exp(w.ami.mh.getLogPseudomarginalLikelihood()) / sumProb;
+//			d.addObservation(new Object[] { w.ami.getModelImplementation().name(),
+//					w.ami.mh.getLogPseudomarginalLikelihood(), w.prob });
+////			System.out.println("Implementation " + w.ami.getModelImplementation().name() + ": " + w.prob);
+//		}
+		DataSet d = new DataSet(Arrays.asList(new String[] { "ModelImplementation", "LPML"}));
 		for (InnerWorker w : innerWorkers) {
 			if (w.ami.hasConverged()) {
 				newList.add(w);
-				sumProb += Math.exp(w.ami.mh.getLogPseudomarginalLikelihood());
-				REpiceaLogManager.logMessage(MetaModelManager.LoggerName, Level.INFO, "Meta-model " + stratumGroup,
-						"Result for the implementation " + w.ami.getModelImplementation().name());
 			}
 		}
-		DataSet d = new DataSet(Arrays.asList(new String[] { "ModelImplementation", "LPML", "Prob" }));
+		Collections.sort(newList);
 		for (InnerWorker w : newList) {
-			w.prob = Math.exp(w.ami.mh.getLogPseudomarginalLikelihood()) / sumProb;
 			d.addObservation(new Object[] { w.ami.getModelImplementation().name(),
-					w.ami.mh.getLogPseudomarginalLikelihood(), w.prob });
-//			System.out.println("Implementation " + w.ami.getModelImplementation().name() + ": " + w.prob);
+					w.ami.mh.getLogPseudomarginalLikelihood()});
 		}
 		modelComparison = d;
-		Collections.sort(newList);
 		return newList.get(0);
 	}
 
@@ -459,7 +486,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	 * @param outputType the output type the model will be fitted to (e.g., volumeAlive_Coniferous)
 	 * @param enableMixedModelImplementations true to test meta-models with stratum random effects
 	 * @return a boolean true if the model has converged or false otherwise
-	 * @deprecated Use the {@link MetaModel#fitModel(String, Map)} method instead
+	 * @deprecated Use the fitModel(String, Map) method instead
 	 */
 	public boolean fitModel(String outputType, boolean enableMixedModelImplementations) {
 		LinkedHashMap<String, Object> modelImplementationStrings = new LinkedHashMap<String, Object>();
@@ -636,10 +663,11 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 				parmDeviates.add(getParameterEstimateGenerator().getRandomDeviate());
 			}
 			
-			double varianceRandomEffect = model instanceof AbstractMixedModelFullImplementation ? 
-					model.getParameters().getValueAt(((AbstractMixedModelFullImplementation)model).indexRandomEffectVariance, 0) : 0.0;
+			double randomEffectStd = model instanceof AbstractMixedModelFullImplementation ? 
+					model.getParameters().getValueAt(((AbstractMixedModelFullImplementation) model).indexRandomEffectStandardDeviation, 0) : 
+						0d;
 					
-			double stdRandomEffect = Math.sqrt(varianceRandomEffect);
+//			double stdRandomEffect = Math.sqrt(varianceRandomEffect);
 				
 			int ns = randomEffectVariabilityEnabled ? nbSubjects : 1;
 			int nr = parameterVariabilityEnabled ? nbRealizations : 1;
@@ -647,7 +675,9 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 			
 			for (int i = 0; i < nr; i++) {
 				for (int j = 0; j < ns; j++) {
-					double rj = randomEffectVariabilityEnabled ? StatisticalUtility.getRandom().nextGaussian() * stdRandomEffect: 0.0;
+					double rj = randomEffectVariabilityEnabled ? 
+							StatisticalUtility.getRandom().nextGaussian() * randomEffectStd :
+								0d;
 					for (int k = 0; k < ageYr.length; k++) {						
 						double pred = model.getPrediction(ageYr[k], timeSinceInitialDateYr, rj, parameterVariabilityEnabled ? parmDeviates.get(i) : getFinalParameterEstimates());
 						ds.addObservation(new Object[] {i, j , ageYr[k], pred});
