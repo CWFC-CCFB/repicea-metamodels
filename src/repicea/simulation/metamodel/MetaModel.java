@@ -168,41 +168,11 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		Exponential(true),
 		ExponentialWithRandomEffect(false);
 
-		private static List<ModelImplEnum> ModelsWithoutRandomEffects;
-//		private static Map<ModelImplEnum, ModelImplEnum> MatchingModelsWithRandomEffects;
-
 		final boolean modelWithoutRandomEffect;
 
 		ModelImplEnum(boolean modelWithoutRandomEffect) {
 			this.modelWithoutRandomEffect = modelWithoutRandomEffect;
 		}
-
-		public static List<ModelImplEnum> getModelsWithoutRandomEffects() {
-			if (ModelsWithoutRandomEffects == null) {
-				ModelsWithoutRandomEffects = new ArrayList<ModelImplEnum>();
-				for (ModelImplEnum e : ModelImplEnum.values()) {
-					if (e.modelWithoutRandomEffect) {
-						ModelsWithoutRandomEffects.add(e);
-					}
-				}
-			}
-			return ModelsWithoutRandomEffects;
-		}
-
-//		private static Map<ModelImplEnum, ModelImplEnum> getMatchingModelsWithRandomEffects() {
-//			if (MatchingModelsWithRandomEffects == null) {
-//				MatchingModelsWithRandomEffects = new HashMap<ModelImplEnum, ModelImplEnum>();
-//				MatchingModelsWithRandomEffects.put(ChapmanRichards, ChapmanRichardsWithRandomEffect);
-//				MatchingModelsWithRandomEffects.put(ChapmanRichardsDerivative,
-//						ChapmanRichardsDerivativeWithRandomEffect);
-//			}
-//			return MatchingModelsWithRandomEffects;
-//		}
-//
-//		public static ModelImplEnum getMatchingModelWithRandomEffects(ModelImplEnum modelImplEnum) {
-//			return getMatchingModelsWithRandomEffects().get(modelImplEnum);
-//		}
-
 	}
 
 	public enum PredictionVarianceOutputType {
@@ -236,8 +206,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	private transient LocalDateTime lastAccessed;	// the last datetime at which this metamodel was accessed (used in cache management in CFSStandGrowth) 
 	
 
-//	private Map<ModelImplEnum, LinkedHashMap<String, Object>[]> parametersMap;
-	
+
 	/**
 	 * Constructor.
 	 * @param stratumGroup a String representing the stratum group
@@ -254,42 +223,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	}
 
 	
-//	Map<ModelImplEnum, LinkedHashMap<String, Object>[]> getParametersMap() {
-//		if (parametersMap == null ) {
-//			parametersMap = new HashMap<ModelImplEnum, LinkedHashMap<String, Object>[]>();
-//		}
-//		return parametersMap;
-//	}
 
-//	/**
-//	 * Define the starting values and prior distributions of parameters for a particular 
-//	 * model implementation. <p>
-//	 * If the parms argument is set to null, the parameters are reset to their default values.
-//	 * 
-//	 * @param modelImpl a ModelImplEnum constant that stands for the model implementation
-//	 * @param parms a LinkedHashMap whose keys are the names of the InputParametersMapKey enum constants
-//	 * with values of appropriate types
-//	 * @see InputParametersMapKey
-//	 */
-//	public void setStartingValuesForThisModelImplementation(ModelImplEnum modelImpl, LinkedHashMap<String, Object>[] parms) {
-//		getParametersMap().put(modelImpl, parms);
-//	}
-
-//	/**
-//	 * Define the starting values and prior distributions of parameters for a particular 
-//	 * model implementation. <p>
-//	 * 
-//	 * @param modelImpl a ModelImplEnum constant that stands for the model implementation
-//	 * @param jsonLinkedHashMap a JSON string representing a LinkedHashMap whose keys are the names of the InputParametersMapKey enum constants
-//	 * with values of appropriate types
-//	 * @see InputParametersMapKey
-//	 */
-//	public void setStartingValuesForThisModelImplementation(ModelImplEnum modelImpl, String jsonLinkedHashMap) {
-//		LinkedHashMap<String, Object>[] mapArray = convertJSONStrToLinkedHashMapArray(jsonLinkedHashMap);
-//		setStartingValuesForThisModelImplementation(modelImpl, mapArray);
-//	}
-
-	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private static LinkedHashMap<String, Object>[] convertJSONStrToLinkedHashMapArray(String jsonLinkedHashMap) {
 		Object o = JsonReader.jsonToJava(jsonLinkedHashMap, null);
@@ -414,7 +348,6 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	static class InnerWorker extends Thread implements Comparable<InnerWorker> {
 
 		final AbstractModelImplementation ami;
-//		double prob;
 
 		InnerWorker(AbstractModelImplementation ami) {
 			super(ami);
@@ -424,13 +357,6 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 
 		@Override
 		public int compareTo(InnerWorker o) {
-//			if (prob > o.prob) {
-//				return -1;
-//			} else if (prob == o.prob) {
-//				return 0;
-//			} else {
-//				return 1;
-//			}
 			if (ami.mh.getLogPseudomarginalLikelihood() > o.ami.mh.getLogPseudomarginalLikelihood()) {
 				return -1;
 			} else if (ami.mh.getLogPseudomarginalLikelihood() == o.ami.mh.getLogPseudomarginalLikelihood()) {
@@ -442,27 +368,14 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	}
 
 	private InnerWorker performModelSelection(List<InnerWorker> innerWorkers) {
-//		double sumProb = 0;
 		List<InnerWorker> newList = new ArrayList<InnerWorker>();
-//		for (InnerWorker w : innerWorkers) {
-//			if (w.ami.hasConverged()) {
-//				newList.add(w);
-//				sumProb += Math.exp(w.ami.mh.getLogPseudomarginalLikelihood());
-//				REpiceaLogManager.logMessage(MetaModelManager.LoggerName, Level.INFO, "Meta-model " + stratumGroup,
-//						"Result for the implementation " + w.ami.getModelImplementation().name());
-//			}
-//		}
-//		DataSet d = new DataSet(Arrays.asList(new String[] { "ModelImplementation", "LPML", "Prob" }));
-//		for (InnerWorker w : newList) {
-//			w.prob = Math.exp(w.ami.mh.getLogPseudomarginalLikelihood()) / sumProb;
-//			d.addObservation(new Object[] { w.ami.getModelImplementation().name(),
-//					w.ami.mh.getLogPseudomarginalLikelihood(), w.prob });
-////			System.out.println("Implementation " + w.ami.getModelImplementation().name() + ": " + w.prob);
-//		}
+		List<InnerWorker> didNotConvergeList = new ArrayList<InnerWorker>();
 		DataSet d = new DataSet(Arrays.asList(new String[] { "ModelImplementation", "LPML"}));
 		for (InnerWorker w : innerWorkers) {
 			if (w.ami.hasConverged()) {
 				newList.add(w);
+			} else {
+				didNotConvergeList.add(w);
 			}
 		}
 		Collections.sort(newList);
@@ -470,33 +383,12 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 			d.addObservation(new Object[] { w.ami.getModelImplementation().name(),
 					w.ami.mh.getLogPseudomarginalLikelihood()});
 		}
+		for (InnerWorker w : didNotConvergeList) {
+			d.addObservation(new Object[] { w.ami.getModelImplementation().name(),
+					Double.NaN});
+		}
 		modelComparison = d;
 		return newList.get(0);
-	}
-
-	/**
-	 * Fit the meta-model.<p>
-	 * This method fits the following model implementations:
-	 * <ul>
-	 * <li> <b>ChapmanRichards</b>
-	 * <li> <b>ChapmanRichardsWithRandomEffects</b> if the enableMixedModelImplementations is set to true
-	 * <li> <b>ChapmanRichardsDerivative</b>
-	 * <li> <b>ChapmanRichardsDerivativeWithRandomEffect</b> if the enableMixedModelImplementations is set to true
-	 * </ul>
-	 * @param outputType the output type the model will be fitted to (e.g., volumeAlive_Coniferous)
-	 * @param enableMixedModelImplementations true to test meta-models with stratum random effects
-	 * @return a boolean true if the model has converged or false otherwise
-	 * @deprecated Use the fitModel(String, Map) method instead
-	 */
-	public boolean fitModel(String outputType, boolean enableMixedModelImplementations) {
-		LinkedHashMap<String, Object> modelImplementationStrings = new LinkedHashMap<String, Object>();
-		modelImplementationStrings.put(ModelImplEnum.ChapmanRichards.name(), null);
-		modelImplementationStrings.put(ModelImplEnum.ChapmanRichardsDerivative.name(), null);
-		if (enableMixedModelImplementations) {
-			modelImplementationStrings.put(ModelImplEnum.ChapmanRichardsWithRandomEffect.name(), null);
-			modelImplementationStrings.put(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect.name(), null);
-		}
-		return fitModel(outputType, modelImplementationStrings);
 	}
 
 	@SuppressWarnings({ "unchecked"})
@@ -539,6 +431,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	
 	/**
 	 * Fit the meta-model.<p>
+	 * 
 	 * @param outputType the output type the model will be fitted to (e.g., volumeAlive_Coniferous)
 	 * @param modelImplementations a Map of List of strings that are the names of the ModelImplEnum constants
 	 * @return a boolean true if the model has converged or false otherwise
@@ -667,8 +560,6 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 					model.getParameters().getValueAt(((AbstractMixedModelFullImplementation) model).indexRandomEffectStandardDeviation, 0) : 
 						0d;
 					
-//			double stdRandomEffect = Math.sqrt(varianceRandomEffect);
-				
 			int ns = randomEffectVariabilityEnabled ? nbSubjects : 1;
 			int nr = parameterVariabilityEnabled ? nbRealizations : 1;
 			DataSet ds = new DataSet(Arrays.asList(new String[] {"RealizationID", "SubjectID", "AgeYr", "Pred"}));
