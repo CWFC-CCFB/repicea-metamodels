@@ -126,7 +126,7 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		EnumMap.put(ChapmanRichardsDerivativeModelImplementation.class, ModelImplEnum.ChapmanRichardsDerivative);
 		EnumMap.put(ChapmanRichardsDerivativeModelWithRandomEffectImplementation.class, ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect);
 		EnumMap.put(ExponentialModelImplementation.class, ModelImplEnum.Exponential);
-		EnumMap.put(ExponentialModelWithRandomEffectImplementation.class, ModelImplEnum.ExponentialWithRandomEffect.Exponential);
+		EnumMap.put(ExponentialModelWithRandomEffectImplementation.class, ModelImplEnum.ExponentialWithRandomEffect);
 		
 	}
 	

@@ -46,6 +46,7 @@ import repicea.simulation.climate.REpiceaClimateGenerator.RepresentativeConcentr
 import repicea.simulation.metamodel.MetaModel.ModelImplEnum;
 import repicea.simulation.scriptapi.ScriptResult;
 import repicea.stats.data.DataSet;
+import repicea.stats.data.Observation;
 import repicea.util.ObjectUtility;
 import repicea.util.REpiceaLogManager;
 import repicea.util.REpiceaTranslator;
@@ -241,6 +242,48 @@ public class MetaModelTest {
 		Assert.assertEquals("Testing rho", 0.83, m.getFinalParameterEstimates().getValueAt(2, 0), 0.02);
 	}
 
+	
+	@SuppressWarnings("unchecked")
+	@Test
+	public void test10ExponentialWithAndWithoutRandomEffectsForStemDensity() throws IOException {
+		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_6OUEST_STR_ME1_6OUEST_NoChange_AliveVolume_AllSpecies.zml";
+		MetaModel m = MetaModel.Load(filename);
+		m.getMetropolisHastingsParameters().nbBurnIn = 1000;
+		m.getMetropolisHastingsParameters().nbAcceptedRealizations = 11000;
+		m.getMetropolisHastingsParameters().nbInitialGrid = 0;
+		m.getMetropolisHastingsParameters().oneEach = 25;
+
+		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[3];
+		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "2000", "Uniform", new String[] {"0", "8000"}});
+		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.005", "Uniform", new String[] {"0.00001", "0.05"}});
+		parms[2] = MetaModel.convertParameters(new Object[] {"rho", "0.99", "Uniform", new String[] {"0.8", "0.995"}});
+
+		Map<String, Object> args = new HashMap<String, Object>();
+		args.put(JsonWriter.TYPE, false);
+		String jsonStr = JsonWriter.objectToJson(parms, args);
+		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
+		startingValuesMap.put(ModelImplEnum.Exponential.name(), jsonStr);
+		
+		parms = new LinkedHashMap[4];
+		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "2000", "Uniform", new String[] {"0", "8000"}});
+		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.005", "Uniform", new String[] {"0.00001", "0.05"}});
+		parms[2] = MetaModel.convertParameters(new Object[] {AbstractModelImplementation.CORRELATION_PARM, "0.99", "Uniform", new String[] {"0.8", "0.995"}});
+		parms[3] = MetaModel.convertParameters(new Object[] {AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD, "1000", "Uniform", new String[] {"0", "3000"}});
+
+		jsonStr = JsonWriter.objectToJson(parms, args);
+		startingValuesMap.put(ModelImplEnum.ExponentialWithRandomEffect.name(), jsonStr);
+		
+		m.fitModel("AliveStemDensity_AllSpecies", startingValuesMap);
+		System.out.println(m.getModelComparison());
+		DataSet outputComparison = m.getModelComparison();
+		int implementationFieldIndex = outputComparison.getFieldNames().indexOf("ModelImplementation");
+		List implementationValues = outputComparison.getFieldValues(implementationFieldIndex);
+		Assert.assertEquals("Testing list size", 2, implementationValues.size());
+		Assert.assertTrue("List contains Exponential", implementationValues.contains(ModelImplEnum.Exponential.name()));
+		Assert.assertTrue("List contains ExponentialWithRandomEffect", implementationValues.contains(ModelImplEnum.ExponentialWithRandomEffect.name()));
+	}
+	
+	
 	@SuppressWarnings("unchecked")
 	public static void main(String[] args) throws IOException, MetaModelException {
 //		AbstractModelImplementation.EstimateResidualVariance = true;
