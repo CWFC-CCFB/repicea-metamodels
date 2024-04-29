@@ -19,7 +19,9 @@
  */
 package repicea.simulation.metamodel;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 import repicea.math.Matrix;
 import repicea.stats.data.StatisticalDataException;
@@ -47,9 +49,6 @@ abstract class AbstractMixedModelFullImplementation extends AbstractModelImpleme
 	protected double getLogLikelihoodForThisBlock(Matrix parameters, int i) {
 		AbstractDataBlockWrapper dbw = dataBlockWrappers.get(i);
 		double randomEffect = parameters.getValueAt(indexFirstRandomEffect + i, 0);
-//		if (randomEffect != 0d) {
-//			int u = 0;
-//		}
 		dbw.setParameterValue(0, randomEffect);
 		return dbw.getLogLikelihood();
 	}	
@@ -60,6 +59,19 @@ abstract class AbstractMixedModelFullImplementation extends AbstractModelImpleme
 		
 		return value * value * randomEffectStandardDeviation * randomEffectStandardDeviation;   
 	}
-	
-	
+
+	@Override
+	public final List<String> getOtherParameterNames() {
+		List<String> parameters = new ArrayList<String>();
+		parameters.add(AbstractModelImplementation.CORRELATION_PARM);
+		parameters.add(AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD);
+		if (!isVarianceErrorTermAvailable)
+			parameters.add(AbstractModelImplementation.RESIDUAL_VARIANCE);
+		for (AbstractDataBlockWrapper w : dataBlockWrappers) {
+			parameters.add("u_" + w.blockId.substring(0, w.blockId.indexOf("_")));
+		}
+		return parameters;
+	}
+
+		
 }

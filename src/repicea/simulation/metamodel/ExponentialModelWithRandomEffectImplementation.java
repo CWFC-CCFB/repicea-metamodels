@@ -115,18 +115,6 @@ class ExponentialModelWithRandomEffectImplementation extends AbstractMixedModelF
 					new String[] {"b1", "b2", AbstractModelImplementation.CORRELATION_PARM, AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD, AbstractModelImplementation.RESIDUAL_VARIANCE});
 	}
 
-	@Override
-	public List<String> getOtherParameterNames() {
-		List<String> parameters = new ArrayList<String>();
-		parameters.add(AbstractModelImplementation.CORRELATION_PARM);
-		parameters.add(AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD);
-		if (!isVarianceErrorTermAvailable)
-			parameters.add(AbstractModelImplementation.RESIDUAL_VARIANCE);
-		for (AbstractDataBlockWrapper w : dataBlockWrappers) {
-			parameters.add("u_" + w.blockId.substring(0, w.blockId.indexOf("_")));
-		}
-		return parameters;
-	}
 
 	@Override
 	public String getModelDefinition() {

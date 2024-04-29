@@ -49,7 +49,6 @@ abstract class AbstractDataBlockWrapper extends AbstractMathematicalFunction {
 			List<Integer> indices,
 			Matrix vectorY,
 			Matrix matrixX,
-//			HierarchicalStatisticalDataStructure structure, 
 			Matrix overallVarCov) {
 		this.blockId = blockId;
 		this.indices = indices;

@@ -109,14 +109,6 @@ class ChapmanRichardsModelImplementation extends AbstractModelImplementation {
 					new String[] {"b1", "b2", "b3", AbstractModelImplementation.CORRELATION_PARM, AbstractModelImplementation.RESIDUAL_VARIANCE});
 	}
 
-	@Override
-	public List<String> getOtherParameterNames() {
-		List<String> parameters = new ArrayList<String>();
-		parameters.add("rho");
-		if (!isVarianceErrorTermAvailable)
-			parameters.add(AbstractModelImplementation.RESIDUAL_VARIANCE);
-		return parameters;
-	}
 
 	@Override
 	public String getModelDefinition() {

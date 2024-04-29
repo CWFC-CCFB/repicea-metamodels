@@ -120,22 +120,6 @@ class ChapmanRichardsDerivativeModelWithRandomEffectImplementation extends Abstr
 					new String[] {"b1", "b2", "b3", AbstractModelImplementation.CORRELATION_PARM, AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD, AbstractModelImplementation.RESIDUAL_VARIANCE});
 	}
 
-	@Override
-	public List<String> getOtherParameterNames() {
-		List<String> parameters = new ArrayList<String>();
-		parameters.add(AbstractModelImplementation.CORRELATION_PARM);
-		parameters.add(AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD);
-		if (!isVarianceErrorTermAvailable)
-			parameters.add(AbstractModelImplementation.RESIDUAL_VARIANCE);
-//		int nbRandomEffects = mh.getFinalParameterEstimates().m_iRows - getEffectList().size() - parameters.size();
-//		for (int i = 1; i <= nbRandomEffects; i++) {
-//			parameters.add("u_" + i);
-//		}
-		for (AbstractDataBlockWrapper w : dataBlockWrappers) {
-			parameters.add("u_" + w.blockId.substring(0, w.blockId.indexOf("_")));
-		}
-		return parameters;
-	}
 
 	@Override
 	public String getModelDefinition() {

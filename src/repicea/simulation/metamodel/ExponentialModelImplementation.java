@@ -103,15 +103,6 @@ class ExponentialModelImplementation extends AbstractModelImplementation {
 	}
 
 	@Override
-	public List<String> getOtherParameterNames() {
-		List<String> parameters = new ArrayList<String>();
-		parameters.add(AbstractModelImplementation.CORRELATION_PARM);
-		if (!isVarianceErrorTermAvailable)
-			parameters.add("AbstractModelImplementation.RESIDUAL_VARIANCE");
-		return parameters;
-	}
-
-	@Override
 	public String getModelDefinition() {
 		return "y ~ b1*exp(-b2*t)";
 	}

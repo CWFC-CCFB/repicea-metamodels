@@ -116,31 +116,9 @@ class ChapmanRichardsDerivativeModelImplementation extends AbstractModelImplemen
 	}
 
 	@Override
-	public List<String> getOtherParameterNames() {
-		List<String> parameters = new ArrayList<String>();
-		parameters.add(AbstractModelImplementation.CORRELATION_PARM);
-		if (!isVarianceErrorTermAvailable)
-			parameters.add("AbstractModelImplementation.RESIDUAL_VARIANCE");
-		return parameters;
-	}
-
-	@Override
 	public String getModelDefinition() {
 		return "y ~ b1*exp(-b2*t)*(1-exp(-b2*t))^b3";
 	}
-
-//	@Override
-//	public void setPriorDistributions(MetropolisHastingsPriorHandler handler) {
-//		handler.clear();
-//		handler.addFixedEffectDistribution(new UniformDistribution(0, 2000), 0);
-//		handler.addFixedEffectDistribution(new UniformDistribution(0.00001, 0.05), 1);
-//		handler.addFixedEffectDistribution(new UniformDistribution(0.8, 6), 2);
-//		handler.addFixedEffectDistribution(new UniformDistribution(0.80, 0.995), indexCorrelationParameter);
-//		if (!isVarianceErrorTermAvailable) {
-//			ContinuousDistribution resVariancePrior = new UniformDistribution(0, 5000);
-//			handler.addFixedEffectDistribution(resVariancePrior, indexResidualErrorVariance);
-//		}
-//	}
 
 	@SuppressWarnings("unchecked")
 	@Override
