@@ -41,10 +41,16 @@ class ChapmanRichardsDerivativeModelImplementation extends AbstractModelImplemen
 
 	@Override
 	double getPrediction(double ageYr, double timeSinceBeginning, double r1, Matrix parameters) {
-		Matrix params = parameters == null ? getParameters() : parameters;
-		double b1 = params.getValueAt(0, 0);
-		double b2 = params.getValueAt(1, 0);
-		double b3 = params.getValueAt(2, 0);
+		return computePrediction(parameters == null ? getParameters() : parameters,
+				ageYr, 
+				timeSinceBeginning, 
+				r1);
+	}
+	
+	static double computePrediction(Matrix parms, double ageYr, double timeSinceBeginning, double r1) {
+		double b1 = parms.getValueAt(0, 0);
+		double b2 = parms.getValueAt(1, 0);
+		double b3 = parms.getValueAt(2, 0);
 		double pred = (b1 + r1) * Math.exp(-b2 * ageYr) * Math.pow(1 - Math.exp(-b2 * ageYr), b3);
 		return pred;
 	}
@@ -78,18 +84,22 @@ class ChapmanRichardsDerivativeModelImplementation extends AbstractModelImplemen
 
 	@Override
 	Matrix getFirstDerivative(double ageYr, double timeSinceBeginning, double r1) {
-		double b1 = getParameters().getValueAt(0, 0);
-		double b2 = getParameters().getValueAt(1, 0);
-		double b3 = getParameters().getValueAt(2, 0);
+		return computeDerivative(getParameters(), ageYr, timeSinceBeginning, r1);
+	}
+	
+	static Matrix computeDerivative(Matrix parms, double ageYr, double timeSinceBeginning, double r1) {
+		double b1 = parms.getValueAt(0, 0);
+		double b2 = parms.getValueAt(1, 0);
+		double b3 = parms.getValueAt(2, 0);
 		
 		double exp = Math.exp(-b2 * ageYr);
 		double root = 1 - exp;
 		
 		Matrix derivatives = new Matrix(3,1);
 		derivatives.setValueAt(0, 0, exp * Math.pow(root, b3));
-		derivatives.setValueAt(1, 0, - ageYr * b1 * exp * Math.pow(root, b3) + 
-				b1 * exp * b3 * Math.pow(root, b3 - 1) * exp * ageYr);
-		derivatives.setValueAt(2, 0, b1 * exp * Math.pow(root, b3) * Math.log(root));
+		derivatives.setValueAt(1, 0, - ageYr * (b1 + r1) * exp * Math.pow(root, b3) + 
+				(b1 + r1) * exp * b3 * Math.pow(root, b3 - 1) * exp * ageYr);
+		derivatives.setValueAt(2, 0, (b1 + r1) * exp * Math.pow(root, b3) * Math.log(root));
 		return derivatives;
 	}
 

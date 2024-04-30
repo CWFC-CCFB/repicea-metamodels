@@ -44,12 +44,10 @@ class ExponentialModelWithRandomEffectImplementation extends AbstractMixedModelF
 	
 	@Override
 	double getPrediction(double ageYr, double timeSinceBeginning, double r1, Matrix parameters) {
-		Matrix params = parameters == null ? getParameters() : parameters; 
-		
-		double b1 = params.getValueAt(0, 0);
-		double b2 = params.getValueAt(1, 0);
-		double pred = (b1 + r1) * Math.exp(-b2 * ageYr);
-		return pred;
+		return ExponentialModelImplementation.computePrediction(parameters == null ? getParameters() : parameters,
+				ageYr, 
+				timeSinceBeginning, 
+				r1);
 	}
 
 	@Override
@@ -89,15 +87,7 @@ class ExponentialModelWithRandomEffectImplementation extends AbstractMixedModelF
 
 	@Override
 	Matrix getFirstDerivative(double ageYr, double timeSinceBeginning, double r1) {
-		double b1 = getParameters().getValueAt(0, 0);
-		double b2 = getParameters().getValueAt(1, 0);
-		
-		double exp = Math.exp(-b2 * ageYr);
-		
-		Matrix derivatives = new Matrix(2,1);
-		derivatives.setValueAt(0, 0, exp);
-		derivatives.setValueAt(1, 0, - ageYr * (b1 + r1) * exp);
-		return derivatives;
+		return ExponentialModelImplementation.computeDerivative(getParameters(), ageYr, timeSinceBeginning, r1);
 	}
 
 	@Override

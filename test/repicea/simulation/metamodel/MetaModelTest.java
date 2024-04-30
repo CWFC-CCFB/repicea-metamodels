@@ -285,7 +285,7 @@ public class MetaModelTest {
 	
 	@SuppressWarnings("unchecked")
 	@Test
-	public void test11FourParameterChapmanRichardsDerivativeForStemDensity() throws IOException {
+	public void test11ModifiedChapmanRichardsDerivativeForStemDensity() throws IOException {
 		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_6OUEST_STR_ME1_6OUEST_NoChange_AliveVolume_AllSpecies.zml";
 		MetaModel m = MetaModel.Load(filename);
 		m.getMetropolisHastingsParameters().nbBurnIn = 1000;
@@ -297,22 +297,19 @@ public class MetaModelTest {
 		args.put(JsonWriter.TYPE, false);
 		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
 		
-		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[5];
+		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[4];
 		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "5000", "Uniform", new String[] {"0", "10000"}});
-		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.02", "Uniform", new String[] {"0.00001", "0.2"}});
-		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "1", "Uniform", new String[] {"0.1", "4"}});
-		parms[3] = MetaModel.convertParameters(new Object[] {"b4", "0.006", "Uniform", new String[] {"0.001", "0.01"}});
-		parms[4] = MetaModel.convertParameters(new Object[] {AbstractModelImplementation.CORRELATION_PARM, "0.92", "Uniform", new String[] {"0.8", "0.995"}});
+		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.005", "Uniform", new String[] {"0.0001", "0.01"}});
+		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "0.2", "Uniform", new String[] {"0.001", "0.5"}});
+		parms[3] = MetaModel.convertParameters(new Object[] {AbstractModelImplementation.CORRELATION_PARM, "0.92", "Uniform", new String[] {"0.8", "0.995"}});
 
 		String jsonStr = JsonWriter.objectToJson(parms, args);
-		startingValuesMap.put(ModelImplEnum.FourParameterChapmanRichardsDerivative.name(), jsonStr);
+		startingValuesMap.put(ModelImplEnum.ModifiedChapmanRichardsDerivative.name(), jsonStr);
 		
 		m.fitModel("AliveStemDensity_AllSpecies", startingValuesMap);
 		System.out.println(m.getSummary());
-//		Assert.assertEquals("Testing b1", 1285, m.getFinalParameterEstimates().getValueAt(0,0), 100);
-//		Assert.assertEquals("Testing b2", 0.035, m.getFinalParameterEstimates().getValueAt(1,0), 0.02);
-		Assert.assertEquals("Testing b3", 0.19, m.getFinalParameterEstimates().getValueAt(2,0), 0.1);
-		Assert.assertEquals("Testing b4", 0.0032, m.getFinalParameterEstimates().getValueAt(3,0), 0.001);
+		Assert.assertEquals("Testing b1", 1225, m.getFinalParameterEstimates().getValueAt(0,0), 100);
+		Assert.assertEquals("Testing b2", 0.0029, m.getFinalParameterEstimates().getValueAt(1,0), 0.001);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -329,21 +326,20 @@ public class MetaModelTest {
 		args.put(JsonWriter.TYPE, false);
 		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
 		
-		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[6];
+		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[5];
 		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "5000", "Uniform", new String[] {"0", "10000"}});
-		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.02", "Uniform", new String[] {"0.00001", "0.2"}});
-		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "1", "Uniform", new String[] {"0.1", "4"}});
-		parms[3] = MetaModel.convertParameters(new Object[] {"b4", "0.006", "Uniform", new String[] {"0.001", "0.01"}});
-		parms[4] = MetaModel.convertParameters(new Object[] {AbstractModelImplementation.CORRELATION_PARM, "0.92", "Uniform", new String[] {"0.8", "0.995"}});
-		parms[5] = MetaModel.convertParameters(new Object[] {AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD, "1000", "Uniform", new String[] {"0", "2000"}});
+		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.005", "Uniform", new String[] {"0.0001", "0.01"}});
+		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "0.2", "Uniform", new String[] {"0.001", "0.5"}});
+		parms[3] = MetaModel.convertParameters(new Object[] {AbstractModelImplementation.CORRELATION_PARM, "0.92", "Uniform", new String[] {"0.8", "0.995"}});
+		parms[4] = MetaModel.convertParameters(new Object[] {AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD, "500", "Uniform", new String[] {"0", "2000"}});
 
 		String jsonStr = JsonWriter.objectToJson(parms, args);
-		startingValuesMap.put(ModelImplEnum.FourParameterChapmanRichardsDerivativeWithRandomEffect.name(), jsonStr);
+		startingValuesMap.put(ModelImplEnum.ModifiedChapmanRichardsDerivativeWithRandomEffect.name(), jsonStr);
 		
 		m.fitModel("AliveStemDensity_AllSpecies", startingValuesMap);
 		System.out.println(m.getSummary());
-		Assert.assertEquals("Testing b1", 1250, m.getFinalParameterEstimates().getValueAt(0,0), 500);
-		Assert.assertEquals("Testing b4", 0.0029, m.getFinalParameterEstimates().getValueAt(3,0), 0.001);
+		Assert.assertEquals("Testing b1", 1220, m.getFinalParameterEstimates().getValueAt(0,0), 100);
+		Assert.assertEquals("Testing b2", 0.0029, m.getFinalParameterEstimates().getValueAt(1,0), 0.001);
 	}
 	
 	@SuppressWarnings("unchecked")

@@ -55,8 +55,7 @@ abstract class AbstractMixedModelFullImplementation extends AbstractModelImpleme
 	
 	protected double getVarianceDueToRandomEffect(double ageYr, double timeSinceBeginning) {		
 		double randomEffectStandardDeviation = getParameters().getValueAt(indexRandomEffectStandardDeviation, 0);
-		double value = this.getFirstDerivative(ageYr, timeSinceBeginning, 0.0).getValueAt(0, 0);
-		
+		double value = getFirstDerivative(ageYr, timeSinceBeginning, 0.0).getValueAt(0, 0);
 		return value * value * randomEffectStandardDeviation * randomEffectStandardDeviation;   
 	}
 
