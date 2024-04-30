@@ -30,12 +30,13 @@ import repicea.stats.data.StatisticalDataException;
 import repicea.stats.distributions.GaussianDistribution;
 
 /**
- * An implementation of the derivative form of the Chapman-Richards model.
- * @author Mathieu Fortin - October 2021
+ * A modified implementation of the Chapman-Richards derivative model.<p>
+ * This model is meant to work with stem density.
+ * @author Mathieu Fortin - April 2024
  */
-class ChapmanRichardsDerivativeModelImplementation extends AbstractModelImplementation {
+class FourParameterChapmanRichardsDerivativeModelImplementation extends AbstractModelImplementation {
 
-	protected ChapmanRichardsDerivativeModelImplementation(String outputType, MetaModel model, LinkedHashMap<String, Object>[] startingValues) throws StatisticalDataException {
+	protected FourParameterChapmanRichardsDerivativeModelImplementation(String outputType, MetaModel model, LinkedHashMap<String, Object>[] startingValues) throws StatisticalDataException {
 		super(outputType, model, startingValues);
 	}
 
@@ -45,7 +46,8 @@ class ChapmanRichardsDerivativeModelImplementation extends AbstractModelImplemen
 		double b1 = params.getValueAt(0, 0);
 		double b2 = params.getValueAt(1, 0);
 		double b3 = params.getValueAt(2, 0);
-		double pred = (b1 + r1) * Math.exp(-b2 * ageYr) * Math.pow(1 - Math.exp(-b2 * ageYr), b3);
+		double b4 = params.getValueAt(3, 0);
+		double pred = (b1 + r1) * Math.exp(-b4 * ageYr) * Math.pow(1 - Math.exp(-b2 * ageYr), b3);
 		return pred;
 	}
 
@@ -55,9 +57,10 @@ class ChapmanRichardsDerivativeModelImplementation extends AbstractModelImplemen
 		fixedEffectsParameterIndices.add(0);
 		fixedEffectsParameterIndices.add(1);
 		fixedEffectsParameterIndices.add(2);
+		fixedEffectsParameterIndices.add(3);
 
-		indexCorrelationParameter = 3;
-		indexResidualErrorVariance = 4;
+		indexCorrelationParameter = 4;
+		indexResidualErrorVariance = 5;
 
 		int lastIndex = !isVarianceErrorTermAvailable ? 
 				indexResidualErrorVariance + 1: 
@@ -78,75 +81,88 @@ class ChapmanRichardsDerivativeModelImplementation extends AbstractModelImplemen
 
 	@Override
 	Matrix getFirstDerivative(double ageYr, double timeSinceBeginning, double r1) {
-		double b1 = getParameters().getValueAt(0, 0);
-		double b2 = getParameters().getValueAt(1, 0);
-		double b3 = getParameters().getValueAt(2, 0);
-		
-		double exp = Math.exp(-b2 * ageYr);
-		double root = 1 - exp;
-		
-		Matrix derivatives = new Matrix(3,1);
-		derivatives.setValueAt(0, 0, exp * Math.pow(root, b3));
-		derivatives.setValueAt(1, 0, - ageYr * b1 * exp * Math.pow(root, b3) + 
-				b1 * exp * b3 * Math.pow(root, b3 - 1) * exp * ageYr);
-		derivatives.setValueAt(2, 0, b1 * exp * Math.pow(root, b3) * Math.log(root));
-		return derivatives;
+		return getDerivatives(getParameters(), ageYr, timeSinceBeginning, r1);
 	}
 
+	static Matrix getDerivatives(Matrix parms, double ageYr, double timeSinceBeginning, double r1) {
+		double b1 = parms.getValueAt(0, 0);
+		double b2 = parms.getValueAt(1, 0);
+		double b3 = parms.getValueAt(2, 0);
+		double b4 = parms.getValueAt(3, 0);
+		
+		double exp1 = Math.exp(-b4 * ageYr);
+		double exp2 = Math.exp(-b2 * ageYr);
+		double root = 1 - exp2;
+		
+		Matrix derivatives = new Matrix(4,1);
+		derivatives.setValueAt(0, 0, exp1 * Math.pow(root, b3));
+		derivatives.setValueAt(1, 0, (b1 + r1) * exp1 * b3 * Math.pow(root, b3 - 1) * exp2 * ageYr);
+		derivatives.setValueAt(2, 0, (b1 + r1) * exp1 * Math.pow(root, b3) * Math.log(root));
+		derivatives.setValueAt(3, 0, -ageYr * (b1 + r1) * exp1 * Math.pow(root, b3));
+		return derivatives;
+	}
+	
+	
 	@Override
 	public boolean isInterceptModel() {return false;}
 
 	@Override
 	public List<String> getEffectList() {
-		return Arrays.asList(new String[] {"b1","b2","b3"});
+		return Arrays.asList(new String[] {"b1","b2","b3","b4"});
 	}
 
 	@Override
 	List<String> getParameterNames() {
 		return Arrays.asList(isVarianceErrorTermAvailable ? 				
-				new String[] {"b1", "b2", "b3", AbstractModelImplementation.CORRELATION_PARM} :
-					new String[] {"b1", "b2", "b3", AbstractModelImplementation.CORRELATION_PARM, AbstractModelImplementation.RESIDUAL_VARIANCE});
+				new String[] {"b1", "b2", "b3", "b4", AbstractModelImplementation.CORRELATION_PARM} :
+					new String[] {"b1", "b2", "b3", "b4", AbstractModelImplementation.CORRELATION_PARM, AbstractModelImplementation.RESIDUAL_VARIANCE});
 	}
 
 	@Override
 	public String getModelDefinition() {
-		return "y ~ b1*exp(-b2*t)*(1-exp(-b2*t))^b3";
+		return "y ~ b1*exp(-b4*t)*(1-exp(-b2*t))^b3";
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	LinkedHashMap<String, Object>[] getDefaultParameters() {
-		 LinkedHashMap<String, Object>[] inputMap = new LinkedHashMap[5];
+		 LinkedHashMap<String, Object>[] inputMap = new LinkedHashMap[6];
 		 LinkedHashMap<String, Object> oMap = new LinkedHashMap<String, Object>();
 		 oMap.put(InputParametersMapKey.Parameter.name(), "b1");
-		 oMap.put(InputParametersMapKey.StartingValue.name(), 1000 + "");
+		 oMap.put(InputParametersMapKey.StartingValue.name(), 5000 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
-		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0", "2000"});
+		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0", "10000"});
 		 inputMap[0] = oMap;
 		 oMap = new LinkedHashMap<String, Object>();
 		 oMap.put(InputParametersMapKey.Parameter.name(), "b2");
 		 oMap.put(InputParametersMapKey.StartingValue.name(), 0.02 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
-		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0.00001", "0.05"});
+		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0.00001", "0.2"});
 		 inputMap[1] = oMap;
 		 oMap = new LinkedHashMap<String, Object>();
 		 oMap.put(InputParametersMapKey.Parameter.name(), "b3");
-		 oMap.put(InputParametersMapKey.StartingValue.name(), 2 + "");
+		 oMap.put(InputParametersMapKey.StartingValue.name(), 1 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
-		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0.8", "6"});
+		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0.1", "4"});
 		 inputMap[2] = oMap;
+		 oMap = new LinkedHashMap<String, Object>();
+		 oMap.put(InputParametersMapKey.Parameter.name(), "b4");
+		 oMap.put(InputParametersMapKey.StartingValue.name(), 0.006 + "");
+		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
+		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0.001", "0.01"});
+		 inputMap[3] = oMap;
 		 oMap = new LinkedHashMap<String, Object>();
 		 oMap.put(InputParametersMapKey.Parameter.name(), AbstractModelImplementation.CORRELATION_PARM);
 		 oMap.put(InputParametersMapKey.StartingValue.name(), 0.92 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
 		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0.80", "0.995"});
-		 inputMap[3] = oMap;
+		 inputMap[4] = oMap;
 		 oMap = new LinkedHashMap<String, Object>();
 		 oMap.put(InputParametersMapKey.Parameter.name(), AbstractModelImplementation.RESIDUAL_VARIANCE);
-		 oMap.put(InputParametersMapKey.StartingValue.name(), 250 + "");
+		 oMap.put(InputParametersMapKey.StartingValue.name(), 2500 + "");
 		 oMap.put(InputParametersMapKey.Distribution.name(), "Uniform");
 		 oMap.put(InputParametersMapKey.DistParms.name(), new String[]{"0", "5000"});
-		 inputMap[4] = oMap;
+		 inputMap[5] = oMap;
 		 return inputMap;
 	}
 

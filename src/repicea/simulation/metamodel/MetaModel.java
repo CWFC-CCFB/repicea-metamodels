@@ -158,21 +158,19 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	 * <li> ChapmanRichardsDerivativeWithRandomEffect
 	 * <li> Exponential
 	 * <li> ExponentialWithRandomEffect
+	 * <li> FourParameterChapmanRichardsDerivative
+	 * <li> FourParameterChapmanRichardsDerivativeWithRandomEffect
 	 * </ul>
 	 */
 	public static enum ModelImplEnum {
-		ChapmanRichards(true), 
-		ChapmanRichardsWithRandomEffect(false), 
-		ChapmanRichardsDerivative(true),
-		ChapmanRichardsDerivativeWithRandomEffect(false),
-		Exponential(true),
-		ExponentialWithRandomEffect(false);
-
-		final boolean modelWithoutRandomEffect;
-
-		ModelImplEnum(boolean modelWithoutRandomEffect) {
-			this.modelWithoutRandomEffect = modelWithoutRandomEffect;
-		}
+		ChapmanRichards, 
+		ChapmanRichardsWithRandomEffect, 
+		ChapmanRichardsDerivative,
+		ChapmanRichardsDerivativeWithRandomEffect,
+		Exponential,
+		ExponentialWithRandomEffect,
+		FourParameterChapmanRichardsDerivative,
+		FourParameterChapmanRichardsDerivativeWithRandomEffect;
 	}
 
 	public enum PredictionVarianceOutputType {
@@ -320,6 +318,12 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 			break;
 		case ExponentialWithRandomEffect:
 			model = new ExponentialModelWithRandomEffectImplementation(outputType, this, startingValues);
+			break;
+		case FourParameterChapmanRichardsDerivative:
+			model = new FourParameterChapmanRichardsDerivativeModelImplementation(outputType, this, startingValues);
+			break;
+		case FourParameterChapmanRichardsDerivativeWithRandomEffect:
+			model = new FourParameterChapmanRichardsDerivativeModelWithRandomEffectImplementation(outputType, this, startingValues);
 			break;
 		default:
 			throw new InvalidParameterException("This ModelImplEnum " + modelImplEnum.name() + " has not been implemented yet!");
