@@ -129,6 +129,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 				}
 			}
 
+			
 			data.fit.timeStamp = MetaModel.this.lastFitTimeStamp;
 			data.fit.outputType = MetaModel.this.model.getSelectedOutputType();
 			data.fit.fitModel = MetaModel.this.model.getModelImplementation().toString();
@@ -663,22 +664,30 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}<p>
+	 * 
+	 * If the model member is null, the model is saved as a proto model, that is a model that
+	 * has not been fitted yet.
+	 */
 	@Override
 	public void save(String filename) throws IOException {
 		XmlSerializer serializer = new XmlSerializer(filename);
 		serializer.writeObject(this);
 		
-		MetaDataHelper helper = new MetaDataHelper(); 
-		MetaModelMetaData data = helper.generate();
-				
-		FileOutputStream os = new FileOutputStream(FileUtility.replaceExtensionBy(filename, "json"));
-		
-		Map<String, Object> options = new HashMap<String, Object>();
-		options.put(JsonWriter.PRETTY_PRINT, true);
-		options.put(JsonWriter.DATE_FORMAT, JsonWriter.ISO_DATE_TIME_FORMAT+"Z");
-		JsonWriter jw = new JsonWriter(os, options);
-		jw.write(data);	
-		jw.close();
+		if (model != null) { // otherwise it remains a proto-model and there is no need for metadata
+			MetaDataHelper helper = new MetaDataHelper(); 
+			MetaModelMetaData data = helper.generate();
+					
+			FileOutputStream os = new FileOutputStream(FileUtility.replaceExtensionBy(filename, "json"));
+			
+			Map<String, Object> options = new HashMap<String, Object>();
+			options.put(JsonWriter.PRETTY_PRINT, true);
+			options.put(JsonWriter.DATE_FORMAT, JsonWriter.ISO_DATE_TIME_FORMAT+"Z");
+			JsonWriter jw = new JsonWriter(os, options);
+			jw.write(data);	
+			jw.close();
+		}
 	}
 
 	/**
