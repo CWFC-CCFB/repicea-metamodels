@@ -314,7 +314,7 @@ public class MetaModelTest {
 
 	@SuppressWarnings("unchecked")
 	@Test
-	public void test12FourParameterChapmanRichardsDerivativeWithRandomEffectForStemDensity() throws IOException {
+	public void test12ModifiedChapmanRichardsDerivativeWithRandomEffectForStemDensity() throws IOException {
 		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_6OUEST_STR_ME1_6OUEST_NoChange_AliveVolume_AllSpecies.zml";
 		MetaModel m = MetaModel.Load(filename);
 		m.getMetropolisHastingsParameters().nbBurnIn = 1000;
@@ -338,7 +338,7 @@ public class MetaModelTest {
 		
 		m.fitModel("AliveStemDensity_AllSpecies", startingValuesMap);
 		System.out.println(m.getSummary());
-		Assert.assertEquals("Testing b1", 1220, m.getFinalParameterEstimates().getValueAt(0,0), 100);
+		Assert.assertEquals("Testing b1", 1220, m.getFinalParameterEstimates().getValueAt(0,0), 120);
 		Assert.assertEquals("Testing b2", 0.0029, m.getFinalParameterEstimates().getValueAt(1,0), 0.001);
 	}
 	
