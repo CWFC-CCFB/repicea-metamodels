@@ -23,11 +23,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 
 import repicea.math.Matrix;
 import repicea.simulation.metamodel.ParametersMapUtilities.InputParametersMapKey;
 import repicea.stats.data.StatisticalDataException;
-import repicea.stats.distributions.GaussianDistribution;
 
 /**
  * An implementation of the derivative form of the Chapman-Richards model.
@@ -55,32 +55,6 @@ class ChapmanRichardsDerivativeModelImplementation extends AbstractModelImplemen
 		return pred;
 	}
 
-	@Override
-	public GaussianDistribution getStartingParmEst(double coefVar) {
-		fixedEffectsParameterIndices = new ArrayList<Integer>();
-		fixedEffectsParameterIndices.add(0);
-		fixedEffectsParameterIndices.add(1);
-		fixedEffectsParameterIndices.add(2);
-
-		indexCorrelationParameter = 3;
-		indexResidualErrorVariance = 4;
-
-		int lastIndex = !isVarianceErrorTermAvailable ? 
-				indexResidualErrorVariance + 1: 
-					indexResidualErrorVariance;
-
-		Matrix parmEst = new Matrix(lastIndex,1);
-		setFixedEffectStartingValuesFromParametersMap(parmEst);
-
-		Matrix varianceDiag = new Matrix(parmEst.m_iRows,1);
-		for (int i = 0; i < varianceDiag.m_iRows; i++) {
-			varianceDiag.setValueAt(i, 0, Math.pow(parmEst.getValueAt(i, 0) * coefVar, 2d));
-		}
-		
-		GaussianDistribution gd = new GaussianDistribution(parmEst, varianceDiag.matrixDiagonal());
-
-		return gd;
-	}
 
 	@Override
 	Matrix getFirstDerivative(double ageYr, double timeSinceBeginning, double r1) {
@@ -113,9 +87,24 @@ class ChapmanRichardsDerivativeModelImplementation extends AbstractModelImplemen
 
 	@Override
 	List<String> getParameterNames() {
-		return Arrays.asList(isVarianceErrorTermAvailable ? 				
-				new String[] {"b1", "b2", "b3", AbstractModelImplementation.CORRELATION_PARM} :
-					new String[] {"b1", "b2", "b3", AbstractModelImplementation.CORRELATION_PARM, AbstractModelImplementation.RESIDUAL_VARIANCE});
+		if (parameterIndexMap == null) {
+			fixedEffectsParameterIndices = new ArrayList<Integer>();
+			fixedEffectsParameterIndices.add(0);
+			fixedEffectsParameterIndices.add(1);
+			fixedEffectsParameterIndices.add(2);
+			parameterIndexMap = new LinkedHashMap<String, Integer>();
+			int lastIndex = 0;
+			parameterIndexMap.put("b1", lastIndex++);
+			parameterIndexMap.put("b2", lastIndex++);
+			parameterIndexMap.put("b3", lastIndex++);
+			parameterIndexMap.put(CORRELATION_PARM, lastIndex++);
+			if (!isVarianceErrorTermAvailable) {
+				parameterIndexMap.put(RESIDUAL_VARIANCE, lastIndex++);
+			}
+			Set<String> names = parameterIndexMap.keySet();
+			parameterNames = Arrays.asList(names.toArray(new String[] {}));
+		}
+		return parameterNames;
 	}
 
 	@Override

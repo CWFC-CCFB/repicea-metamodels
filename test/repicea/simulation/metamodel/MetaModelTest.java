@@ -46,7 +46,6 @@ import repicea.simulation.climate.REpiceaClimateGenerator.RepresentativeConcentr
 import repicea.simulation.metamodel.MetaModel.ModelImplEnum;
 import repicea.simulation.scriptapi.ScriptResult;
 import repicea.stats.data.DataSet;
-import repicea.stats.data.Observation;
 import repicea.util.ObjectUtility;
 import repicea.util.REpiceaLogManager;
 import repicea.util.REpiceaTranslator;

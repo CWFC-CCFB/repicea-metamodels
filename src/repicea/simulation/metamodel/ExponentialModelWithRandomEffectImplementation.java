@@ -23,14 +23,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 
 import repicea.math.Matrix;
-import repicea.simulation.metamodel.ParametersMapUtilities.FormattedParametersMapKey;
 import repicea.simulation.metamodel.ParametersMapUtilities.InputParametersMapKey;
 import repicea.stats.data.StatisticalDataException;
-import repicea.stats.distributions.ContinuousDistribution;
-import repicea.stats.distributions.GaussianDistribution;
-import repicea.stats.estimators.mcmc.MetropolisHastingsPriorHandler;
 
 /**
  * An implementation of the exponential model with random effects.
@@ -51,41 +48,6 @@ class ExponentialModelWithRandomEffectImplementation extends AbstractMixedModelF
 	}
 
 	@Override
-	public GaussianDistribution getStartingParmEst(double coefVar) {
-		fixedEffectsParameterIndices = new ArrayList<Integer>();
-		fixedEffectsParameterIndices.add(0);
-		fixedEffectsParameterIndices.add(1);
-		
-		indexCorrelationParameter = 2;
-		indexRandomEffectStandardDeviation = 3;
-		indexResidualErrorVariance = 4;
-		indexFirstRandomEffect = !isVarianceErrorTermAvailable ? 
-				indexResidualErrorVariance + 1 : 
-					indexResidualErrorVariance;
-		
-		Matrix parmEst = new Matrix(indexFirstRandomEffect + dataBlockWrappers.size(),1);
-		setFixedEffectStartingValuesFromParametersMap(parmEst);
-		for (int i = 0; i < dataBlockWrappers.size(); i++) {
-			parmEst.setValueAt(indexFirstRandomEffect + i, 0, 0);
-		}
-		
-		Matrix varianceDiag = new Matrix(parmEst.m_iRows,1);
-		for (int i = 0; i < varianceDiag.m_iRows; i++) {
-			double varianceSampler = i < indexFirstRandomEffect ?
-					Math.pow(parmEst.getValueAt(i, 0) * coefVar, 2d) :
-						Math.pow(parmEst.getValueAt(indexRandomEffectStandardDeviation, 0) * coefVar, 2d);
-			varianceDiag.setValueAt(i, 0, varianceSampler);
-		}
-		
-		GaussianDistribution gd = new GaussianDistribution(parmEst, varianceDiag.matrixDiagonal());
-		
-		return gd;
-	}
-
-
-
-
-	@Override
 	Matrix getFirstDerivative(double ageYr, double timeSinceBeginning, double r1) {
 		return ExponentialModelImplementation.computeDerivative(getParameters(), ageYr, timeSinceBeginning, r1);
 	}
@@ -100,24 +62,29 @@ class ExponentialModelWithRandomEffectImplementation extends AbstractMixedModelF
 
 	@Override
 	List<String> getParameterNames() {
-		return Arrays.asList(isVarianceErrorTermAvailable ?
-				new String[] {"b1", "b2", AbstractModelImplementation.CORRELATION_PARM, AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD} :
-					new String[] {"b1", "b2", AbstractModelImplementation.CORRELATION_PARM, AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD, AbstractModelImplementation.RESIDUAL_VARIANCE});
+		if (parameterIndexMap == null) {
+			fixedEffectsParameterIndices = new ArrayList<Integer>();
+			fixedEffectsParameterIndices.add(0);
+			fixedEffectsParameterIndices.add(1);
+			parameterIndexMap = new LinkedHashMap<String, Integer>();
+			int lastIndex = 0;
+			parameterIndexMap.put("b1", lastIndex++);
+			parameterIndexMap.put("b2", lastIndex++);
+			parameterIndexMap.put(CORRELATION_PARM, lastIndex++);
+			parameterIndexMap.put(RANDOM_EFFECT_STD, lastIndex++);
+			if (!isVarianceErrorTermAvailable) {
+				parameterIndexMap.put(RESIDUAL_VARIANCE, lastIndex++);
+			}
+			Set<String> names = parameterIndexMap.keySet();
+			parameterNames = Arrays.asList(names.toArray(new String[] {}));
+		}
+		return parameterNames;
 	}
 
 
 	@Override
 	public String getModelDefinition() {
 		return "y ~ (b1 + u_i)*exp(-b2*t)";
-	}
-
-	@Override
-	public void setPriorDistributions(MetropolisHastingsPriorHandler handler) {
-		super.setPriorDistributions(handler);
-		ContinuousDistribution stdPrior = (ContinuousDistribution) parametersMap.get(AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD).get(FormattedParametersMapKey.PriorDistribution);
-		for (int i = 0; i < dataBlockWrappers.size(); i++) {
-			handler.addRandomEffectStandardDeviation(new GaussianDistribution(0, 1), stdPrior, indexFirstRandomEffect + i);
-		}
 	}
 
 	@SuppressWarnings("unchecked")

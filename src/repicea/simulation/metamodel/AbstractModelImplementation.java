@@ -88,10 +88,12 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		@Override
 		void updateCovMat(Matrix parameters) {
 			if (!AbstractModelImplementation.this.isVarianceErrorTermAvailable) {	// The residual variance is then a parameter to be estimated
-				double resVariance = AbstractModelImplementation.this.getParameters().getValueAt(AbstractModelImplementation.this.indexResidualErrorVariance, 0);
+				int resVarIndex = parameterIndexMap.get(RESIDUAL_VARIANCE);
+				double resVariance = parameters.getValueAt(resVarIndex, 0);
 				this.varCovFullCorr = new Matrix(indices.size(), indices.size(), resVariance / nbPlots, 0); 
 			}
-			double rhoParm = parameters.getValueAt(indexCorrelationParameter, 0);	
+			int corrParmIndex = parameterIndexMap.get(CORRELATION_PARM);
+			double rhoParm = parameters.getValueAt(corrParmIndex, 0);	
 			SymmetricMatrix corrMat = StatisticalUtility.constructRMatrix(Arrays.asList(new Double[] {1d, rhoParm}), TypeMatrixR.POWER, distances);
 			Matrix varCov = varCovFullCorr.elementWiseMultiply(corrMat);
 
@@ -140,8 +142,10 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	private Matrix parameters;
 	private Matrix parmsVarCov;
 	protected List<Integer> fixedEffectsParameterIndices;
-	protected int indexCorrelationParameter;
-	protected int indexResidualErrorVariance;
+	protected LinkedHashMap<String, Integer> parameterIndexMap;
+	protected List<String> parameterNames;
+//	protected int indexCorrelationParameter;
+//	protected int indexResidualErrorVariance;
 	private DataSet finalDataSet;
 	protected final boolean isVarianceErrorTermAvailable;
 	protected final Map<String, Map<FormattedParametersMapKey, Object>> parametersMap; 
@@ -242,18 +246,28 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	}
 	
 	protected final void setFixedEffectStartingValuesFromParametersMap(Matrix parmEst) {
+		int resVarIndex = getResidualVarianceParameterIndex();
 		for (String paramName : getParameterNames()) {
 			int index = getParameterNames().indexOf(paramName);
-			if (index != indexResidualErrorVariance || !isVarianceErrorTermAvailable) {
+			if (index != resVarIndex || !isVarianceErrorTermAvailable) {
 				parmEst.setValueAt(index, 0, (Double) parametersMap.get(paramName).get(FormattedParametersMapKey.StartingValue));
 			} 
 		}
 	}
+
+	private int getResidualVarianceParameterIndex() {
+		int resVarIndex = parameterIndexMap.containsKey(RESIDUAL_VARIANCE) ?
+				parameterIndexMap.get(RESIDUAL_VARIANCE) :
+					-1;
+		return resVarIndex;
+	}
+	
 	
 	protected final void setPriorsFromParametersMap(MetropolisHastingsPriorHandler handler) {
+		int resVarIndex = getResidualVarianceParameterIndex();
 		for (String paramName : getParameterNames()) {
 			int index = getParameterNames().indexOf(paramName);
-			if (index != indexResidualErrorVariance || !isVarianceErrorTermAvailable) {
+			if (index != resVarIndex || !isVarianceErrorTermAvailable) {
 				handler.addFixedEffectDistribution((ContinuousDistribution) parametersMap.get(paramName).get(FormattedParametersMapKey.PriorDistribution), index);
 			}
 		}
@@ -400,9 +414,6 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		return predictions;
 	}
 
-	@Override
-	public abstract GaussianDistribution getStartingParmEst(double coefVar);
-
 	String getSelectedOutputType() {
 		return outputType;
 	}
@@ -478,10 +489,32 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		List<String> parameters = new ArrayList<String>();
 		parameters.add(AbstractModelImplementation.CORRELATION_PARM);
 		if (!isVarianceErrorTermAvailable)
-			parameters.add("AbstractModelImplementation.RESIDUAL_VARIANCE");
+			parameters.add(AbstractModelImplementation.RESIDUAL_VARIANCE);
 		return parameters;
 	}
 
-	
+	/**
+	 * Provide the sampler variance.
+	 * @param parameters a Matrix instance with all the parameters (including random effects if any)
+	 * @param coefVar a factor to modulate the variance
+	 * @return a Matrix instance
+	 */
+	Matrix calculateSamplerVariance(Matrix parameters, double coefVar) {
+		Matrix varianceDiag = new Matrix(parameters.m_iRows,1);
+		for (int i = 0; i < varianceDiag.m_iRows; i++) {
+			varianceDiag.setValueAt(i, 0, Math.pow(parameters.getValueAt(i, 0) * coefVar, 2d));
+		}
+		return varianceDiag;
+	}
+
+	@Override
+	public GaussianDistribution getStartingParmEst(double coefVar) {
+		int nbParameters = parameterIndexMap.size();
+		Matrix parmEst = new Matrix(nbParameters, 1);
+		setFixedEffectStartingValuesFromParametersMap(parmEst);
+		Matrix varianceDiag = calculateSamplerVariance(parmEst, coefVar);
+		GaussianDistribution gd = new GaussianDistribution(parmEst, varianceDiag.matrixDiagonal());
+		return gd;
+	}
 
 }
