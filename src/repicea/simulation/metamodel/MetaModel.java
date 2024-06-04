@@ -562,7 +562,9 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 			}
 			
 			double randomEffectStd = model instanceof AbstractMixedModelFullImplementation ? 
-					model.getParameters().getValueAt(((AbstractMixedModelFullImplementation) model).indexRandomEffectStandardDeviation, 0) : 
+					model.getParameters().getValueAt(
+							model.parameterIndexMap.get(AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD),
+							0) : 
 						0d;
 					
 			int ns = randomEffectVariabilityEnabled ? nbSubjects : 1;
@@ -845,8 +847,12 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 				}
 			}
 		}
+		if (model != null) {
+			if (model.parameterIndexMap == null) {
+				model.getParameterNames();	// this way we make sure the parameter index map is instantiated
+			}
+		}
 	}
-	
 	
 	
 }

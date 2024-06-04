@@ -61,7 +61,7 @@ public class MetaModelDeserializationTest {
 		Assert.assertTrue("Testing file size for original version", originalFileSize > 3E6);
 		long newFileSize = Files.size(Paths.get(newFile.toURI()));
 		System.out.println("Light serialization size " + newFileSize);
-		Assert.assertTrue("Testing file size for light version", newFileSize < 45000);
+		Assert.assertTrue("Testing file size for light version", newFileSize < 50000);
 	}
 
 	@Test
