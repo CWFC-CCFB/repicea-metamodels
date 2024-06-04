@@ -67,7 +67,7 @@ abstract class AbstractDataBlockWrapper extends AbstractMathematicalFunction {
 	 * Provide the initial age of the stratum.
 	 * @return the age (yr)
 	 */
-	final int getInitialAge() {return ((Number) ageYr.getValueAt(0, 0)).intValue();}
+	final int getInitialAgeYr() {return ((Number) ageYr.getValueAt(0, 0)).intValue();}
 	
 	/**
 	 * Ensure null variances are set to 0.0001

@@ -78,6 +78,9 @@ class ChapmanRichardsModelWithRandomEffectImplementation extends AbstractMixedMo
 			if (!isVarianceErrorTermAvailable) {
 				parameterIndexMap.put(RESIDUAL_VARIANCE, lastIndex++);
 			}
+			if (isRegenerationLagEvaluationNeeded) {
+				parameterIndexMap.put(REG_LAG_PARM, lastIndex++);
+			}
 			Set<String> names = parameterIndexMap.keySet();
 			parameterNames = Arrays.asList(names.toArray(new String[] {}));
 		}

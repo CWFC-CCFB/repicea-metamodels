@@ -42,6 +42,7 @@ import repicea.stats.data.Observation;
 import repicea.stats.data.StatisticalDataException;
 import repicea.stats.distributions.ContinuousDistribution;
 import repicea.stats.distributions.GaussianDistribution;
+import repicea.stats.distributions.UniformDistribution;
 import repicea.stats.estimators.mcmc.MetropolisHastingsAlgorithm;
 import repicea.stats.estimators.mcmc.MetropolisHastingsCompatibleModel;
 import repicea.stats.estimators.mcmc.MetropolisHastingsPriorHandler;
@@ -55,6 +56,12 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 
 	protected static final String RESIDUAL_VARIANCE = "sigma2_res";
 	protected static final String CORRELATION_PARM = "rho";
+	protected static final String REG_LAG_PARM = "regLag";
+	
+	protected static final List<String> NUISANCE_PARMS = new ArrayList<String>();
+	static {
+		NUISANCE_PARMS.add(REG_LAG_PARM);
+	}
 	
 	/**
 	 * A nested class to handle blocks of repeated measurements.
@@ -144,11 +151,12 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	protected List<Integer> fixedEffectsParameterIndices;
 	protected LinkedHashMap<String, Integer> parameterIndexMap;
 	protected List<String> parameterNames;
-//	protected int indexCorrelationParameter;
-//	protected int indexResidualErrorVariance;
 	private DataSet finalDataSet;
 	protected final boolean isVarianceErrorTermAvailable;
+	protected final boolean isRegenerationLagEvaluationNeeded;
 	protected final Map<String, Map<FormattedParametersMapKey, Object>> parametersMap; 
+
+	protected final int ageYrLimitBelowWhichThereIsLikelyRegenerationLag = 10;
 
 	/**
 	 * Internal constructor.
@@ -186,13 +194,20 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		dataBlockWrappers = new ArrayList<AbstractDataBlockWrapper>();
 		Matrix vectorY = structure.constructVectorY();
 		Matrix matrixX = structure.constructMatrixX();
+		int minimumStratumAgeYr = Integer.MAX_VALUE;
 		for (String k : formattedMap.keySet()) {
 			DataBlock db = formattedMap.get(k);
 			List<Integer> indices = db.getIndices();
 			int age = Integer.parseInt(k.substring(0, k.indexOf("_")));
 			int nbPlots = scriptResults.get(age).getNbPlots();
-			dataBlockWrappers.add(createWrapper(k, indices, vectorY, matrixX, varCov, nbPlots));
+			AbstractDataBlockWrapper bw = createWrapper(k, indices, vectorY, matrixX, varCov, nbPlots);
+			dataBlockWrappers.add(bw);
+			if (bw.getInitialAgeYr() < minimumStratumAgeYr) {
+				minimumStratumAgeYr = bw.getInitialAgeYr();
+			}
 		}
+		
+		isRegenerationLagEvaluationNeeded = minimumStratumAgeYr <= ageYrLimitBelowWhichThereIsLikelyRegenerationLag;
 		
 		finalDataSet = structure.getDataSet();
 		mh = new MetropolisHastingsAlgorithm(this, MetaModelManager.LoggerName, getLogMessagePrefix());
@@ -201,7 +216,7 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		LinkedHashMap<String, Object>[] unformattedMap = startingValues == null ?
 				getDefaultParameters() :
 				startingValues;
-		parametersMap = ParametersMapUtilities.formatParametersMap(unformattedMap, getParameterNames());
+		parametersMap = ParametersMapUtilities.formatParametersMap(unformattedMap, getParameterNames(), NUISANCE_PARMS);
 	}
 
 	abstract LinkedHashMap<String, Object>[] getDefaultParameters();
@@ -218,17 +233,20 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	
 	private Matrix generatePredictions(AbstractDataBlockWrapper dbw, double randomEffect, boolean includePredVariance) {
 		boolean canCalculateVariance = includePredVariance && mh.getParameterCovarianceMatrix() != null;
-		Matrix mu;
-		if (canCalculateVariance) {
-			mu = new Matrix(dbw.vecY.m_iRows, 2);
-		} else {
-			mu = new Matrix(dbw.vecY.m_iRows, 1);
-		}
+		Matrix mu = canCalculateVariance ? new Matrix(dbw.vecY.m_iRows, 2) : new Matrix(dbw.vecY.m_iRows, 1);
+		
+		Matrix correctedAgeYr = dbw.getInitialAgeYr() <= ageYrLimitBelowWhichThereIsLikelyRegenerationLag ?
+				dbw.ageYr.scalarAdd(-getParameters().getValueAt(parameterIndexMap.get(REG_LAG_PARM), 0)) : // we subtract the regeneration lag for young stratum
+					dbw.ageYr;
+		
+//		if (correctedAgeYr.subtract(dbw.ageYr).getAbsoluteValue().anyElementLargerThan(1E-4)) {
+//			int u = 0;
+//		}
 		
 		for (int i = 0; i < mu.m_iRows; i++) {
-			mu.setValueAt(i, 0, getPrediction(dbw.ageYr.getValueAt(i, 0), dbw.timeSinceBeginning.getValueAt(i, 0), randomEffect));
+			mu.setValueAt(i, 0, getPrediction(correctedAgeYr.getValueAt(i, 0), dbw.timeSinceBeginning.getValueAt(i, 0), randomEffect));
 			if (canCalculateVariance) {
-				double predVar = getPredictionVariance(dbw.ageYr.getValueAt(i, 0), dbw.timeSinceBeginning.getValueAt(i, 0), randomEffect);
+				double predVar = getPredictionVariance(correctedAgeYr.getValueAt(i, 0), dbw.timeSinceBeginning.getValueAt(i, 0), randomEffect);
 				mu.setValueAt(i, 1, predVar);
 			}
 		}
@@ -246,28 +264,23 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	}
 	
 	protected final void setFixedEffectStartingValuesFromParametersMap(Matrix parmEst) {
-		int resVarIndex = getResidualVarianceParameterIndex();
 		for (String paramName : getParameterNames()) {
-			int index = getParameterNames().indexOf(paramName);
-			if (index != resVarIndex || !isVarianceErrorTermAvailable) {
+			int index = this.parameterIndexMap.get(paramName);
+			if (paramName.equals(REG_LAG_PARM)) {
+				parmEst.setValueAt(index, 0, 0d);  // the lag is 0 by default
+			} else {	
 				parmEst.setValueAt(index, 0, (Double) parametersMap.get(paramName).get(FormattedParametersMapKey.StartingValue));
 			} 
 		}
 	}
-
-	private int getResidualVarianceParameterIndex() {
-		int resVarIndex = parameterIndexMap.containsKey(RESIDUAL_VARIANCE) ?
-				parameterIndexMap.get(RESIDUAL_VARIANCE) :
-					-1;
-		return resVarIndex;
-	}
-	
 	
 	protected final void setPriorsFromParametersMap(MetropolisHastingsPriorHandler handler) {
-		int resVarIndex = getResidualVarianceParameterIndex();
 		for (String paramName : getParameterNames()) {
 			int index = getParameterNames().indexOf(paramName);
-			if (index != resVarIndex || !isVarianceErrorTermAvailable) {
+			if (paramName.equals(REG_LAG_PARM)) {
+				handler.addFixedEffectDistribution(new UniformDistribution(new Matrix(1,1), 
+						new Matrix(1,1,ageYrLimitBelowWhichThereIsLikelyRegenerationLag,0)), index);
+			} else  {
 				handler.addFixedEffectDistribution((ContinuousDistribution) parametersMap.get(paramName).get(FormattedParametersMapKey.PriorDistribution), index);
 			}
 		}
@@ -487,9 +500,11 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	@Override
 	public List<String> getOtherParameterNames() {
 		List<String> parameters = new ArrayList<String>();
-		parameters.add(AbstractModelImplementation.CORRELATION_PARM);
+		parameters.add(CORRELATION_PARM);
 		if (!isVarianceErrorTermAvailable)
-			parameters.add(AbstractModelImplementation.RESIDUAL_VARIANCE);
+			parameters.add(RESIDUAL_VARIANCE);
+		if (isRegenerationLagEvaluationNeeded) 
+			parameters.add(REG_LAG_PARM);
 		return parameters;
 	}
 
@@ -500,9 +515,15 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	 * @return a Matrix instance
 	 */
 	Matrix calculateSamplerVariance(Matrix parameters, double coefVar) {
+		int resLagIndex = parameterIndexMap.containsKey(REG_LAG_PARM) ?
+				parameterIndexMap.get(REG_LAG_PARM) :
+					-1;
 		Matrix varianceDiag = new Matrix(parameters.m_iRows,1);
 		for (int i = 0; i < varianceDiag.m_iRows; i++) {
-			varianceDiag.setValueAt(i, 0, Math.pow(parameters.getValueAt(i, 0) * coefVar, 2d));
+			double parmValue = i == resLagIndex ?
+					ageYrLimitBelowWhichThereIsLikelyRegenerationLag :
+					parameters.getValueAt(i, 0);
+			varianceDiag.setValueAt(i, 0, Math.pow(parmValue * coefVar, 2d));
 		}
 		return varianceDiag;
 	}

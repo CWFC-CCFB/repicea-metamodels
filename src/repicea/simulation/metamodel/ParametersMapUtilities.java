@@ -113,7 +113,7 @@ public class ParametersMapUtilities {
 	 * @param parametersForThisModel the list of parameters to be provided for a particular model implementation
 	 * @return a Map of Map instance key1 is the parameter name, key2 refers to the starting value and  prior distribution.
 	 */
-	static Map<String, Map<FormattedParametersMapKey, Object>> formatParametersMap(LinkedHashMap<String, Object>[] unformattedMap, List<String> parametersForThisModel) {
+	static Map<String, Map<FormattedParametersMapKey, Object>> formatParametersMap(LinkedHashMap<String, Object>[] unformattedMap, List<String> parametersForThisModel, List<String> nuisanceParms) {
 		Map<String, Map<FormattedParametersMapKey, Object>> parameterMap = new HashMap<String, Map<FormattedParametersMapKey, Object>>();
 		for (LinkedHashMap<String, Object> entry : unformattedMap) {
 			Map<String, Object> clonedMap = new HashMap<String, Object>();
@@ -123,7 +123,7 @@ public class ParametersMapUtilities {
 			parameterMap.put(parameterName, formattedMap);
 		}
 		for (String p : parametersForThisModel) {
-			if (!parameterMap.containsKey(p)) {
+			if (!parameterMap.containsKey(p) && !nuisanceParms.contains(p)) {
 				throw new InvalidParameterException("Parameter " + p + " is not included in the parameter map!");
 			}
 		}

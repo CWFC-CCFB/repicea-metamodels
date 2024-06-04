@@ -70,6 +70,8 @@ abstract class AbstractMixedModelFullImplementation extends AbstractModelImpleme
 		parameters.add(AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD);
 		if (!isVarianceErrorTermAvailable)
 			parameters.add(AbstractModelImplementation.RESIDUAL_VARIANCE);
+		if (isRegenerationLagEvaluationNeeded) 
+			parameters.add(REG_LAG_PARM);
 		for (AbstractDataBlockWrapper w : dataBlockWrappers) {
 			parameters.add("u_" + w.blockId.substring(0, w.blockId.indexOf("_")));
 		}
@@ -78,13 +80,22 @@ abstract class AbstractMixedModelFullImplementation extends AbstractModelImpleme
 
 	@Override
 	Matrix calculateSamplerVariance(Matrix parameters, double coefVar) {
+		int resLagIndex = parameterIndexMap.containsKey(REG_LAG_PARM) ?
+				parameterIndexMap.get(REG_LAG_PARM) :
+					-1;
 		Matrix varianceDiag = new Matrix(parameters.m_iRows,1);
 		int randomEffectSTDIndex = parameterIndexMap.get(AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD);
 		int nbParameters = parameterIndexMap.size();
 		for (int i = 0; i < varianceDiag.m_iRows; i++) {
-			double varianceSampler = i < nbParameters ?
-					Math.pow(parameters.getValueAt(i, 0) * coefVar, 2d) :
-						Math.pow(parameters.getValueAt(randomEffectSTDIndex, 0) * coefVar, 2d);
+			double varianceSampler;
+			if (i < nbParameters) {
+				double parmValue = i == resLagIndex ?
+						ageYrLimitBelowWhichThereIsLikelyRegenerationLag :
+						parameters.getValueAt(i, 0);
+				varianceSampler = Math.pow(parmValue * coefVar, 2d);
+			} else {
+				varianceSampler = Math.pow(parameters.getValueAt(randomEffectSTDIndex, 0) * coefVar, 2d);
+			}
 			varianceDiag.setValueAt(i, 0, varianceSampler);
 		}
 		return varianceDiag;

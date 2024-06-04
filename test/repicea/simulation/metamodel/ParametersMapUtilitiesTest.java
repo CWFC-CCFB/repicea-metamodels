@@ -69,7 +69,7 @@ public class ParametersMapUtilitiesTest {
 		 inputMap[4] = oMap;
 
 		List<String> parameterNames = Arrays.asList(new String[] {"b1", "b2", "b3", AbstractModelImplementation.CORRELATION_PARM, AbstractModelImplementation.RESIDUAL_VARIANCE});
-		Map<String, Map<FormattedParametersMapKey, Object>> result = ParametersMapUtilities.formatParametersMap(inputMap, parameterNames);
+		Map<String, Map<FormattedParametersMapKey, Object>> result = ParametersMapUtilities.formatParametersMap(inputMap, parameterNames, AbstractModelImplementation.NUISANCE_PARMS);
 		Assert.assertEquals("Testing map size", 5, result.size());
 		Assert.assertEquals("Testing starting value", 0.02, (Double) result.get("b2").get(FormattedParametersMapKey.StartingValue), 1E-8);
 		UniformDistribution d = (UniformDistribution) result.get("b3").get(FormattedParametersMapKey.PriorDistribution);
