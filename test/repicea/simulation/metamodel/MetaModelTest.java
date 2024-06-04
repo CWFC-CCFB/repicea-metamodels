@@ -41,12 +41,12 @@ import org.junit.runners.MethodSorters;
 
 import com.cedarsoftware.util.io.JsonWriter;
 
+import repicea.math.Matrix;
 import repicea.serial.SerializerChangeMonitor;
 import repicea.simulation.climate.REpiceaClimateGenerator.RepresentativeConcentrationPathway;
 import repicea.simulation.metamodel.MetaModel.ModelImplEnum;
 import repicea.simulation.scriptapi.ScriptResult;
 import repicea.stats.data.DataSet;
-import repicea.stats.data.Observation;
 import repicea.util.ObjectUtility;
 import repicea.util.REpiceaLogManager;
 import repicea.util.REpiceaTranslator;
@@ -342,6 +342,35 @@ public class MetaModelTest {
 		Assert.assertEquals("Testing b2", 0.0029, m.getFinalParameterEstimates().getValueAt(1,0), 0.001);
 	}
 	
+	@Test
+	public void test13MetaModelRE38With10YrOldStratum() throws IOException {
+//		REpiceaTranslator.setCurrentLanguage(Language.English);
+//        System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$-6s %5$s%6$s%n");
+//		REpiceaLogManager.getLogger(MetaModelManager.LoggerName).setLevel(Level.INFO);
+//		ConsoleHandler sh = new ConsoleHandler();
+//		sh.setLevel(Level.INFO);
+//		sh.setFormatter(new SimpleFormatter());
+//		REpiceaLogManager.getLogger(MetaModelManager.LoggerName).addHandler(sh);
+
+		String path = ObjectUtility.getPackagePath(MetaModelTest.class);
+		String metaModelFilename = path + "QC_3EST_RS38" + "_NoChange.zml";
+		MetaModel metaModel = MetaModel.Load(metaModelFilename);
+		LinkedHashMap<String, Object> implementations = new LinkedHashMap<String, Object>();
+		implementations.put(ModelImplEnum.ChapmanRichards.name(), null);
+		implementations.put(ModelImplEnum.ChapmanRichardsWithRandomEffect.name(), null);
+		implementations.put(ModelImplEnum.ChapmanRichardsDerivative.name(), null);
+		implementations.put(ModelImplEnum.ChapmanRichardsDerivativeWithRandomEffect.name(), null);
+		metaModel.fitModel("AliveVolume_AllSpecies", implementations);
+		System.out.println(metaModel.getModelComparison());
+		System.out.println(metaModel.getSummary());
+		boolean properImplementation = metaModel.model instanceof ChapmanRichardsDerivativeModelImplementation;
+		Assert.assertTrue("Proper model implementation was selected", properImplementation);
+		Matrix parms = metaModel.getFinalParameterEstimates();
+		Assert.assertEquals("Testing parameter b1", 1185, parms.getValueAt(0, 0), 10);
+		Assert.assertEquals("Testing parameter resLag", 8.87, parms.getValueAt(4, 0), .2);
+	}
+
+	
 	@SuppressWarnings("unchecked")
 	public static void main(String[] args) throws IOException, MetaModelException {
 //		AbstractModelImplementation.EstimateResidualVariance = true;
@@ -407,4 +436,5 @@ public class MetaModelTest {
 //		System.out.println(m.getSummary());
 //		int u = 0;
 	}
+	
 }
