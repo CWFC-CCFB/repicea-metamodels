@@ -104,15 +104,15 @@ public class MetaModelTest {
 		MetaModelInstance = null;
 	}
 
-	@Test
-	public void test01MetaModelDeserialization() throws IOException, MetaModelException {
-		Assert.assertTrue("Model is deserialized", MetaModelInstance != null);
-		Assert.assertTrue("Has converged", MetaModelInstance.hasConverged());
-		String filename = ObjectUtility.getPackagePath(getClass()) + "finalDataSet.csv";
-		MetaModelInstance.exportFinalDataSet(filename);
-		int actualNbOfRecords = MetaModelInstance.getFinalDataSet().getNumberOfObservations();
-		Assert.assertEquals("Testing final dataset size", 60, actualNbOfRecords);
-	}
+//	@Test
+//	public void test01MetaModelDeserialization() throws IOException, MetaModelException {
+//		Assert.assertTrue("Model is deserialized", MetaModelInstance != null);
+//		Assert.assertTrue("Has converged", MetaModelInstance.hasConverged());
+//		String filename = ObjectUtility.getPackagePath(getClass()) + "finalDataSet.csv";
+//		MetaModelInstance.exportFinalDataSet(filename);
+//		int actualNbOfRecords = MetaModelInstance.getFinalDataSet().getNumberOfObservations();
+//		Assert.assertEquals("Testing final dataset size", 60, actualNbOfRecords);
+//	}
 	
 	@Test
 	public void test02OutputTypes() throws Exception {
@@ -421,7 +421,7 @@ public class MetaModelTest {
 //				UNCOMMENT THIS LINE TO UPDATE THE META MODELS
 //				m.save(path + "QC_FMU02664_" + vegPot + "_NoChange_AliveVolume_AllSpecies.zml");
 				m.exportMetropolisHastingsSample(outputPath + File.separator + vegPot + "_" + outputType + "MHSample.csv");
-				m.exportFinalDataSet(outputPath + File.separator + vegPot + "_" + outputType + ".csv");
+//				m.exportFinalDataSet(outputPath + File.separator + vegPot + "_" + outputType + ".csv");
 				System.out.println(m.getModelComparison().toString());
 				System.out.println(m.getSummary());
 //				m.getModelComparison().save(outputPath + File.separator + vegPot + "_" + outputType + "ModelComparison.csv");

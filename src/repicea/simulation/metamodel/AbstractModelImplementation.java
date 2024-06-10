@@ -151,7 +151,8 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	protected List<Integer> fixedEffectsParameterIndices;
 	protected LinkedHashMap<String, Integer> parameterIndexMap;
 	protected List<String> parameterNames;
-	private DataSet finalDataSet;
+	private HierarchicalStatisticalDataStructure structure;
+	//	private DataSet finalDataSet;
 	protected final boolean isVarianceErrorTermAvailable;
 	protected final boolean isRegenerationLagEvaluationNeeded;
 	protected final Map<String, Map<FormattedParametersMapKey, Object>> parametersMap; 
@@ -176,7 +177,7 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 			throw new InvalidParameterException("The outputType " + outputType + " is not part of the dataset!");
 		}
 		this.stratumGroup = stratumGroup;
-		HierarchicalStatisticalDataStructure structure = getDataStructureReady(outputType, scriptResults);
+		structure = getDataStructureReady(outputType, scriptResults);
 		isVarianceErrorTermAvailable = metaModel.isVarianceAvailable() && !AbstractModelImplementation.EstimateResidualVariance;
 		Matrix varCov = getVarCovReady(outputType, scriptResults);
 
@@ -209,7 +210,7 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		
 		isRegenerationLagEvaluationNeeded = minimumStratumAgeYr <= ageYrLimitBelowWhichThereIsLikelyRegenerationLag;
 		
-		finalDataSet = structure.getDataSet();
+//		finalDataSet = structure.getDataSet();
 		mh = new MetropolisHastingsAlgorithm(this, MetaModelManager.LoggerName, getLogMessagePrefix());
 		mh.setSimulationParameters(metaModel.mhSimParms);
 		
@@ -366,7 +367,12 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		}
 	}
 
-
+	/**
+	 * Entry point for log-likelihood calculation.
+	 * @param dbw an AbstractDataBlockWrapper dbw
+	 * @param randomEffect a random effect
+	 * @return a Matrix of predictions
+	 */
 	private Matrix generatePredictions(AbstractDataBlockWrapper dbw, double randomEffect) {
 		return generatePredictions(dbw, randomEffect, false);
 	}
@@ -410,22 +416,22 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		parmsVarCov = m;
 	}
 
-	private Matrix getVectorOfPopulationAveragedPredictionsAndVariances() {
-		int size = 0;
-		for (AbstractDataBlockWrapper dbw : dataBlockWrappers) {
-			size += dbw.indices.size();
-		}
-		Matrix predictions = new Matrix(size,2);
-		for (AbstractDataBlockWrapper dbw : dataBlockWrappers) {
-			Matrix y_i = generatePredictions(dbw, 0d, true);
-			for (int i = 0; i < dbw.indices.size(); i++) {
-				int index = dbw.indices.get(i);
-				predictions.setValueAt(index, 0, y_i.getValueAt(i, 0));
-				predictions.setValueAt(index, 1, y_i.getValueAt(i, 1));
-			}
-		}
-		return predictions;
-	}
+//	private Matrix getVectorOfPopulationAveragedPredictionsAndVariances() {
+//		int size = 0;
+//		for (AbstractDataBlockWrapper dbw : dataBlockWrappers) {
+//			size += dbw.indices.size();
+//		}
+//		Matrix predictions = new Matrix(size,2);
+//		for (AbstractDataBlockWrapper dbw : dataBlockWrappers) {
+//			Matrix y_i = generatePredictions(dbw, 0d, true);
+//			for (int i = 0; i < dbw.indices.size(); i++) {
+//				int index = dbw.indices.get(i);
+//				predictions.setValueAt(index, 0, y_i.getValueAt(i, 0));
+//				predictions.setValueAt(index, 1, y_i.getValueAt(i, 1));
+//			}
+//		}
+//		return predictions;
+//	}
 
 	String getSelectedOutputType() {
 		return outputType;
@@ -443,19 +449,19 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 			setParameters(mh.getFinalParameterEstimates());
 			setParmsVarCov(mh.getParameterCovarianceMatrix());
 			
-			Matrix finalPred = getVectorOfPopulationAveragedPredictionsAndVariances();
-			Object[] finalPredArray = new Object[finalPred.m_iRows];
-			Object[] finalPredVarArray = new Object[finalPred.m_iRows];
-			Object[] implementationArray = new Object[finalPred.m_iRows];
-			for (int i = 0; i < finalPred.m_iRows; i++) {
-				finalPredArray[i] = finalPred.getValueAt(i, 0);
-				finalPredVarArray[i] = finalPred.getValueAt(i, 1);
-				implementationArray[i] = getModelImplementation().name();
-			}
-
-			finalDataSet.addField("modelImplementation", implementationArray);
-			finalDataSet.addField("pred", finalPredArray);
-			finalDataSet.addField("predVar", finalPredVarArray);
+//			Matrix finalPred = getVectorOfPopulationAveragedPredictionsAndVariances();
+//			Object[] finalPredArray = new Object[finalPred.m_iRows];
+//			Object[] finalPredVarArray = new Object[finalPred.m_iRows];
+//			Object[] implementationArray = new Object[finalPred.m_iRows];
+//			for (int i = 0; i < finalPred.m_iRows; i++) {
+//				finalPredArray[i] = finalPred.getValueAt(i, 0);
+//				finalPredVarArray[i] = finalPred.getValueAt(i, 1);
+//				implementationArray[i] = getModelImplementation().name();
+//			}
+//
+//			finalDataSet.addField("modelImplementation", implementationArray);
+//			finalDataSet.addField("pred", finalPredArray);
+//			finalDataSet.addField("predVar", finalPredVarArray);
 		}
 	}
 	
@@ -467,9 +473,9 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		doEstimation();
 	}
 	
-	DataSet getFinalDataSet() {
-		return finalDataSet;
-	}
+//	DataSet getFinalDataSet() {
+//		return finalDataSet;
+//	}
 
 	@Override
 	public MetropolisHastingsAlgorithm getEstimator() {
@@ -488,7 +494,10 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	}
 	
 	@Override
-	public int getNumberOfObservations() {return finalDataSet.getNumberOfObservations();}
+	public int getNumberOfObservations() {
+//		return finalDataSet.getNumberOfObservations();
+		return structure.getNumberOfObservations();
+	}
 
 	public abstract String getModelDefinition();
 	
@@ -538,4 +547,12 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		return gd;
 	}
 
+	double getRegenerationLagYrIfAny() {
+		if (parameterIndexMap.containsKey(REG_LAG_PARM)) {
+			int index = parameterIndexMap.get(REG_LAG_PARM);
+			return getParameters().getValueAt(index, 0);
+		} else {
+			return 0d;
+		}
+	}
 }

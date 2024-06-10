@@ -607,18 +607,18 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		return model.getParameters();
 	}
 
-	/**
-	 * Export a final dataset, that is the initial data set plus the meta-model
-	 * predictions.<p>
-	 * This works only if the model has converged.
-	 * 
-	 * @param filename the name of the file
-	 * @throws IOException if an I/O error has occurred
-	 * @throws MetaModelException if the model has not converged
-	 */
-	public void exportFinalDataSet(String filename) throws IOException, MetaModelException {
-		getFinalDataSet().save(filename);
-	}
+//	/**
+//	 * Export a final dataset, that is the initial data set plus the meta-model
+//	 * predictions.<p>
+//	 * This works only if the model has converged.
+//	 * 
+//	 * @param filename the name of the file
+//	 * @throws IOException if an I/O error has occurred
+//	 * @throws MetaModelException if the model has not converged
+//	 */
+//	public void exportFinalDataSet(String filename) throws IOException, MetaModelException {
+//		getFinalDataSet().save(filename);
+//	}
 
 	/**
 	 * Provide the selected output type that was set in the call to method fitModel.
@@ -653,18 +653,18 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		return model.mh.convertMetropolisHastingsSampleToDataSet();
 	}
 
-	/**
-	 * Provide a DataSet instance with the observed values. 
-	 * @return a DataSet instance
-	 * @throws MetaModelException if the model has not converged
-	 */
-	public DataSet getFinalDataSet() throws MetaModelException {
-		if (hasConverged()) {
-			return model.getFinalDataSet();
-		} else {
-			throw new MetaModelException("The model of this group : " + stratumGroup + " has not been fitted or has not converged yet!");
-		}
-	}
+//	/**
+//	 * Provide a DataSet instance with the observed values. 
+//	 * @return a DataSet instance
+//	 * @throws MetaModelException if the model has not converged
+//	 */
+//	public DataSet getFinalDataSet() throws MetaModelException {
+//		if (hasConverged()) {
+//			return model.getFinalDataSet();
+//		} else {
+//			throw new MetaModelException("The model of this group : " + stratumGroup + " has not been fitted or has not converged yet!");
+//		}
+//	}
 
 	/**
 	 * {@inheritDoc}<p>
@@ -854,6 +854,19 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		}
 	}
 	
+	/**
+	 * Provide the average regeneration lag if there is one.
+	 * @return the regeneration lag (yr) or 0 if there is no regeneration lag in the model.
+	 * @throws MetaModelException if the model has not been fitted or has not converged
+	 */
+	public double getRegenerationLagYrIfAny() throws MetaModelException {
+		if (hasConverged()) {
+			return model.getRegenerationLagYrIfAny();
+		} else {
+			throw new MetaModelException("The model of this group : " + stratumGroup + " has not been fitted or has not converged yet!");
+		}
+
+	}
 //	public static void main(String[] args) throws IOException {
 //		
 //		MetaModel m = MetaModel.Load("C:\\Users\\matforti\\OneDrive - NRCan RNCan\\Documents\\7_Developpement\\ModellingProjects\\MetaModelSet\\proto\\QC\\3EST\\PET4\\Artemis2009\\QC_3EST_RS38_NoChange.zml");
