@@ -104,15 +104,15 @@ public class MetaModelTest {
 		MetaModelInstance = null;
 	}
 
-//	@Test
-//	public void test01MetaModelDeserialization() throws IOException, MetaModelException {
-//		Assert.assertTrue("Model is deserialized", MetaModelInstance != null);
-//		Assert.assertTrue("Has converged", MetaModelInstance.hasConverged());
-//		String filename = ObjectUtility.getPackagePath(getClass()) + "finalDataSet.csv";
-//		MetaModelInstance.exportFinalDataSet(filename);
-//		int actualNbOfRecords = MetaModelInstance.getFinalDataSet().getNumberOfObservations();
-//		Assert.assertEquals("Testing final dataset size", 60, actualNbOfRecords);
-//	}
+	@Test
+	public void test01MetaModelDeserialization() throws IOException, MetaModelException {
+		Assert.assertTrue("Model is deserialized", MetaModelInstance != null);
+		Assert.assertTrue("Has converged", MetaModelInstance.hasConverged());
+		String filename = ObjectUtility.getPackagePath(getClass()) + "finalDataSet.csv";
+		MetaModelInstance.exportFinalDataSet(filename);
+		int actualNbOfRecords = MetaModelInstance.getFinalDataSet().getNumberOfObservations();
+		Assert.assertEquals("Testing final dataset size", 60, actualNbOfRecords);
+	}
 	
 	@Test
 	public void test02OutputTypes() throws Exception {
@@ -344,14 +344,6 @@ public class MetaModelTest {
 	
 	@Test
 	public void test13MetaModelRE38With10YrOldStratum() throws IOException {
-//		REpiceaTranslator.setCurrentLanguage(Language.English);
-//        System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$-6s %5$s%6$s%n");
-//		REpiceaLogManager.getLogger(MetaModelManager.LoggerName).setLevel(Level.INFO);
-//		ConsoleHandler sh = new ConsoleHandler();
-//		sh.setLevel(Level.INFO);
-//		sh.setFormatter(new SimpleFormatter());
-//		REpiceaLogManager.getLogger(MetaModelManager.LoggerName).addHandler(sh);
-
 		String path = ObjectUtility.getPackagePath(MetaModelTest.class);
 		String metaModelFilename = path + "QC_3EST_RS38" + "_NoChange.zml";
 		MetaModel metaModel = MetaModel.Load(metaModelFilename);
@@ -368,7 +360,23 @@ public class MetaModelTest {
 		Matrix parms = metaModel.getFinalParameterEstimates();
 		Assert.assertEquals("Testing parameter b1", 1185, parms.getValueAt(0, 0), 10);
 		Assert.assertEquals("Testing parameter resLag", 8.87, parms.getValueAt(4, 0), .2);
+		metaModel.save(ObjectUtility.getPackagePath(getClass()) + "metaModelTest.zml");
 	}
+	
+	@Test
+	public void test14DeserializeMetaModelRE38With10YrOldStratum() throws IOException {
+		String path = ObjectUtility.getPackagePath(getClass());
+		String metaModelFilename = path + "metaModelTest.zml";
+		MetaModel metaModel = MetaModel.Load(metaModelFilename);
+		System.out.println(metaModel.getModelComparison());
+		System.out.println(metaModel.getSummary());
+		boolean properImplementation = metaModel.model instanceof ChapmanRichardsDerivativeModelImplementation;
+		Assert.assertTrue("Proper model implementation was selected", properImplementation);
+		Matrix parms = metaModel.getFinalParameterEstimates();
+		Assert.assertEquals("Testing parameter b1", 1185, parms.getValueAt(0, 0), 10);
+		Assert.assertEquals("Testing parameter resLag", 8.87, parms.getValueAt(4, 0), .2);
+	}
+	
 
 	
 	@SuppressWarnings("unchecked")

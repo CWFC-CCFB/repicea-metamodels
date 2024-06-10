@@ -151,8 +151,7 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	protected List<Integer> fixedEffectsParameterIndices;
 	protected LinkedHashMap<String, Integer> parameterIndexMap;
 	protected List<String> parameterNames;
-	private HierarchicalStatisticalDataStructure structure;
-	//	private DataSet finalDataSet;
+	private DataSet finalDataSet;
 	protected final boolean isVarianceErrorTermAvailable;
 	protected final boolean isRegenerationLagEvaluationNeeded;
 	protected final Map<String, Map<FormattedParametersMapKey, Object>> parametersMap; 
@@ -177,7 +176,7 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 			throw new InvalidParameterException("The outputType " + outputType + " is not part of the dataset!");
 		}
 		this.stratumGroup = stratumGroup;
-		structure = getDataStructureReady(outputType, scriptResults);
+		HierarchicalStatisticalDataStructure structure = getDataStructureReady(outputType, scriptResults);
 		isVarianceErrorTermAvailable = metaModel.isVarianceAvailable() && !AbstractModelImplementation.EstimateResidualVariance;
 		Matrix varCov = getVarCovReady(outputType, scriptResults);
 
@@ -312,29 +311,29 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	 * @throws StatisticalDataException
 	 */
 	private HierarchicalStatisticalDataStructure getDataStructureReady(String outputType, Map<Integer, ScriptResult> scriptResults) throws StatisticalDataException {
-		DataSet overallDataset = null;
+		finalDataSet = null;
 		for (int initAgeYr : scriptResults.keySet()) {
 			ScriptResult r = scriptResults.get(initAgeYr);
 			DataSet dataSet = r.getDataSet();
-			if (overallDataset == null) {
+			if (finalDataSet == null) {
 				List<String> fieldNames = new ArrayList<String>();
 				fieldNames.addAll(dataSet.getFieldNames());
 				fieldNames.add("initialAgeYr");
-				overallDataset = new DataSet(fieldNames);
+				finalDataSet = new DataSet(fieldNames);
 			}
-			int outputTypeFieldNameIndex = overallDataset.getFieldNames().indexOf(ScriptResult.OutputTypeFieldName);
+			int outputTypeFieldNameIndex = finalDataSet.getFieldNames().indexOf(ScriptResult.OutputTypeFieldName);
 			for (Observation obs : dataSet.getObservations()) {
 				List<Object> newObs = new ArrayList<Object>();
 				Object[] obsArray = obs.toArray();
 				if (obsArray[outputTypeFieldNameIndex].equals(outputType)) {
 					newObs.addAll(Arrays.asList(obsArray));
 					newObs.add(initAgeYr);	// adding the initial age to the data set
-					overallDataset.addObservation(newObs.toArray());
+					finalDataSet.addObservation(newObs.toArray());
 				}
 			}
 		}
-		overallDataset.indexFieldType();
-		HierarchicalStatisticalDataStructure dataStruct = new GenericHierarchicalStatisticalDataStructure(overallDataset, false);	// no sorting
+		finalDataSet.indexFieldType();
+		HierarchicalStatisticalDataStructure dataStruct = new GenericHierarchicalStatisticalDataStructure(finalDataSet, false);	// no sorting
 		dataStruct.setInterceptModel(false); // no intercept
 		dataStruct.setModelDefinition("Estimate ~ initialAgeYr + timeSinceInitialDateYr + (1 | initialAgeYr/OutputType)");
 		return dataStruct;
@@ -416,23 +415,6 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		parmsVarCov = m;
 	}
 
-//	private Matrix getVectorOfPopulationAveragedPredictionsAndVariances() {
-//		int size = 0;
-//		for (AbstractDataBlockWrapper dbw : dataBlockWrappers) {
-//			size += dbw.indices.size();
-//		}
-//		Matrix predictions = new Matrix(size,2);
-//		for (AbstractDataBlockWrapper dbw : dataBlockWrappers) {
-//			Matrix y_i = generatePredictions(dbw, 0d, true);
-//			for (int i = 0; i < dbw.indices.size(); i++) {
-//				int index = dbw.indices.get(i);
-//				predictions.setValueAt(index, 0, y_i.getValueAt(i, 0));
-//				predictions.setValueAt(index, 1, y_i.getValueAt(i, 1));
-//			}
-//		}
-//		return predictions;
-//	}
-
 	String getSelectedOutputType() {
 		return outputType;
 	}
@@ -448,20 +430,6 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		if (mh.isConvergenceAchieved()) {
 			setParameters(mh.getFinalParameterEstimates());
 			setParmsVarCov(mh.getParameterCovarianceMatrix());
-			
-//			Matrix finalPred = getVectorOfPopulationAveragedPredictionsAndVariances();
-//			Object[] finalPredArray = new Object[finalPred.m_iRows];
-//			Object[] finalPredVarArray = new Object[finalPred.m_iRows];
-//			Object[] implementationArray = new Object[finalPred.m_iRows];
-//			for (int i = 0; i < finalPred.m_iRows; i++) {
-//				finalPredArray[i] = finalPred.getValueAt(i, 0);
-//				finalPredVarArray[i] = finalPred.getValueAt(i, 1);
-//				implementationArray[i] = getModelImplementation().name();
-//			}
-//
-//			finalDataSet.addField("modelImplementation", implementationArray);
-//			finalDataSet.addField("pred", finalPredArray);
-//			finalDataSet.addField("predVar", finalPredVarArray);
 		}
 	}
 	
@@ -473,9 +441,9 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		doEstimation();
 	}
 	
-//	DataSet getFinalDataSet() {
-//		return finalDataSet;
-//	}
+	DataSet getFinalDataSet() {
+		return finalDataSet;
+	}
 
 	@Override
 	public MetropolisHastingsAlgorithm getEstimator() {
@@ -495,8 +463,7 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	
 	@Override
 	public int getNumberOfObservations() {
-//		return finalDataSet.getNumberOfObservations();
-		return structure.getNumberOfObservations();
+		return finalDataSet.getNumberOfObservations();
 	}
 
 	public abstract String getModelDefinition();
