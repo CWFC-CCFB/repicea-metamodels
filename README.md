@@ -36,3 +36,4 @@ This library relies on
 - repicea (licensed LGPL-3)  
 - repicea-mathstats (licensed LGPL-3)
 - repicea-simulation (licensed LGPL-3)
+- json-io (licensed Apache Software License v2.0)
