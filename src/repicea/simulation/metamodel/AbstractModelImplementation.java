@@ -377,7 +377,7 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	}
 	
 	final double getPrediction(double ageYr, double timeSinceBeginning, double r1) {
-		return this.getPrediction(ageYr, timeSinceBeginning, r1, null);
+		return getPrediction(ageYr, timeSinceBeginning, r1, null);
 	}
 	
 	abstract double getPrediction(double ageYr, double timeSinceBeginning, double r1, Matrix parameters);

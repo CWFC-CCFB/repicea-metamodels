@@ -483,16 +483,23 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	
 	
 	/**
-	 * Provide a single prediction using the model parameters
+	 * Provide a single prediction using the model parameters. <p>
+	 * 
+	 * The method automatically implements the regeneration lag. 
 	 * 
 	 * @param ageYr The ageYr for which the prediction is to be computed                   
 	 * @param timeSinceInitialDateYr The number of years since initial date year for the prediction
+	 * @param randomEffect the value of the random effect
+	 * @param parameterEstimates a Matrix instance. If null, the final parameter estimates are used.
 	 * @return the prediction
 	 * @throws MetaModelException if the meta-model has not converged
 	 */
-	public double getPrediction(int ageYr, int timeSinceInitialDateYr) throws MetaModelException {
+	double getPrediction(double ageYr, int timeSinceInitialDateYr, double randomEffect, Matrix parameterEstimates) throws MetaModelException {
 		if (hasConverged()) {
-			double pred = model.getPrediction(ageYr, timeSinceInitialDateYr, 0d);
+			double ageYrMod = ageYr - model.getRegenerationLagYrIfAny();
+			double pred = ageYrMod <= 0d ?
+					0d :
+						model.getPrediction(ageYrMod, timeSinceInitialDateYr, randomEffect, parameterEstimates);
 			lastAccessed = LocalDateTime.now();
 			return pred;
 		} else {
@@ -510,7 +517,9 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	
 	
 	/**
-	 * Provide deterministic predictions and associated variance using the model parameters  
+	 * Provide deterministic predictions and associated variance using the model parameters.<p>
+	 * 
+	 * The regeneration lag is accounted for in the predictions.
 	 * 
 	 * @param ageYr An array of all ageYrs for which the predictions are to be computed                   
 	 * @param timeSinceInitialDateYr The number of years since initial date year for the predictions
@@ -529,7 +538,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 				new DataSet(Arrays.asList(new String[] {"AgeYr", "Pred", "Variance"})) :
 					new DataSet(Arrays.asList(new String[] {"AgeYr", "Pred"}));
 		for (int k = 0; k < ageYr.length; k++) {
-			double pred = this.getPrediction(ageYr[k], timeSinceInitialDateYr);
+			double pred = getPrediction(ageYr[k], timeSinceInitialDateYr, 0d, null);
 			if (includeVariance) {
 				double variance  = getPredictionVariance(ageYr[k], timeSinceInitialDateYr, varianceOutputType == PredictionVarianceOutputType.PARAMESTRE);
 				ds.addObservation(new Object[] {ageYr[k], pred, variance});
@@ -540,8 +549,9 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		return ds;
 	}
 	
+	
 	/**
-	 * Provide multiple predictions sets using the model parameters using Monte Carlo simulation on model parameters 
+	 * Provide multiple predictions sets using the model parameters using Monte Carlo simulation on model parameters.
 	 * 
 	 * @param ageYr An array of all ageYrs for which the predictions are to be computed                   
 	 * @param timeSinceInitialDateYr The number of years since initial date year for the predictions
@@ -577,7 +587,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 							StatisticalUtility.getRandom().nextGaussian() * randomEffectStd :
 								0d;
 					for (int k = 0; k < ageYr.length; k++) {						
-						double pred = model.getPrediction(ageYr[k], timeSinceInitialDateYr, rj, parameterVariabilityEnabled ? parmDeviates.get(i) : getFinalParameterEstimates());
+						double pred = getPrediction(ageYr[k], timeSinceInitialDateYr, rj, parameterVariabilityEnabled ? parmDeviates.get(i) : getFinalParameterEstimates());
 						ds.addObservation(new Object[] {i, j , ageYr[k], pred});
 					}
 				}
@@ -591,9 +601,24 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		}
 	}
 	
-	public double getPredictionVariance(int ageYr, int timeSinceInitialDateYr, boolean includeRandomEffectVariance) throws MetaModelException {
+	/**
+ 	 * Provide the prediction variance.
+ 	 * 
+ 	 * The method automatically implements the regeneration lag. 
+ 	 *
+	 * @param ageYr stratum age (yr) 
+	 * @param timeSinceInitialDateYr The number of years since initial date year for the predictions
+	 * @param includeRandomEffectVariance a boolean to include the random effect
+	 * @return a double
+	 * @throws MetaModelException if the model has not converged
+	 */
+	double getPredictionVariance(double ageYr, int timeSinceInitialDateYr, boolean includeRandomEffectVariance) throws MetaModelException {
 		if (hasConverged()) {
-			double variance = model.getPredictionVariance(ageYr, timeSinceInitialDateYr, 0d);
+			double ageYrMod = ageYr - model.getRegenerationLagYrIfAny();
+			if (ageYrMod <= 0d) {
+				return 0d;
+			}
+			double variance = model.getPredictionVariance(ageYrMod, timeSinceInitialDateYr, 0d);
 			if (includeRandomEffectVariance && model instanceof AbstractMixedModelFullImplementation) {
 				variance += ((AbstractMixedModelFullImplementation)model).getVarianceDueToRandomEffect(ageYr, timeSinceInitialDateYr);
 			}
@@ -869,14 +894,14 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	}
 	
 	
-	public static void main(String[] args) throws IOException {
-		
-		MetaModel m = MetaModel.Load("C:\\Users\\matforti\\OneDrive - NRCan RNCan\\Documents\\7_Developpement\\ModellingProjects\\MetaModelSet\\output\\QC\\2EST\\PET4\\Artemis2009\\QC_2EST_RS38_NoChange_AliveVolume_AllSpecies.zml");
-		
-		m.scriptResults.remove(10);
-		m.save("C:\\Users\\matforti\\OneDrive - NRCan RNCan\\Documents\\7_Developpement\\ModellingProjects\\MetaModelSet\\proto\\QC\\3EST\\PET4\\Artemis2009\\QC_3EST_RS38_NoChange_NEW.zml");
-		int u = 0;
-		
-	}
+//	public static void main(String[] args) throws IOException {
+//		
+//		MetaModel m = MetaModel.Load("C:\\Users\\matforti\\OneDrive - NRCan RNCan\\Documents\\7_Developpement\\ModellingProjects\\MetaModelSet\\output\\QC\\2EST\\PET4\\Artemis2009\\QC_2EST_RS38_NoChange_AliveVolume_AllSpecies.zml");
+//		
+//		m.scriptResults.remove(10);
+//		m.save("C:\\Users\\matforti\\OneDrive - NRCan RNCan\\Documents\\7_Developpement\\ModellingProjects\\MetaModelSet\\proto\\QC\\3EST\\PET4\\Artemis2009\\QC_3EST_RS38_NoChange_NEW.zml");
+//		int u = 0;
+//		
+//	}
 	
 }

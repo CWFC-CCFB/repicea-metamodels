@@ -74,7 +74,7 @@ public class MetaModelManager extends ConcurrentHashMap<String, MetaModel> imple
 	 */
 	public double getPrediction(String stratumGroup, int ageYr, int timeSinceInitialDateYr) throws MetaModelException {
 		MetaModel metaModel = getFittedMetaModel(stratumGroup);
-		return metaModel.getPrediction(ageYr, timeSinceInitialDateYr);
+		return metaModel.getPrediction(ageYr, timeSinceInitialDateYr, 0d, null);
 	}
 	
 	private MetaModel getFittedMetaModel(String stratumGroup) throws MetaModelException {
