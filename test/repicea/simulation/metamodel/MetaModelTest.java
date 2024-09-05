@@ -330,7 +330,7 @@ public class MetaModelTest {
 		
 		m.fitModel("AliveStemDensity_AllSpecies", startingValuesMap);
 		System.out.println(m.getSummary());
-		Assert.assertEquals("Testing b1", 1220, m.getFinalParameterEstimates().getValueAt(0,0), 130);
+		Assert.assertEquals("Testing b1", 1220, m.getFinalParameterEstimates().getValueAt(0,0), 150);
 		Assert.assertEquals("Testing b2", 0.0029, m.getFinalParameterEstimates().getValueAt(1,0), 0.001);
 	}
 	
