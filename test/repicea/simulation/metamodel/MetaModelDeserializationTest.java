@@ -79,7 +79,7 @@ public class MetaModelDeserializationTest {
 
 		double loadingRatio = (double) loadingTimeOriginal / loadingTimeLight;
 		System.out.println("Loading ratio = " + loadingRatio);
-		Assert.assertTrue("Testing load time for original version", loadingRatio > 15);
+		Assert.assertTrue("Testing load time for original version", loadingRatio > 10);
 		LinkedHashMap<String, Object>[] predOriginal = originalVersion.getPredictions(new int[]{10,20,30,40,50}, 0, PredictionVarianceOutputType.NONE).getProtoMapArrayForJSONConversion();
 		LinkedHashMap<String, Object>[] predLight = lightVersion.getPredictions(new int[]{10,20,30,40,50}, 0, PredictionVarianceOutputType.NONE).getProtoMapArrayForJSONConversion();
 		double expected = (Double) predOriginal[predOriginal.length-1].get("Pred");

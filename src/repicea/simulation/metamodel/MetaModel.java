@@ -767,7 +767,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	 * not have its variance field.
 	 * @return a boolean
 	 */
-	boolean isVarianceAvailable() {
+	public boolean isVarianceAvailable() {
 		if (scriptResults.isEmpty()) {
 			return false;
 		} else {
