@@ -439,10 +439,10 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	 * 
 	 * @param outputType the output type the model will be fitted to (e.g., volumeAlive_Coniferous)
 	 * @param modelImplementations a Map of List of strings that are the names of the ModelImplEnum constants
-	 * @return a boolean true if the model has converged or false otherwise
+	 * @return a string either DONE or ERROR: [...] if something went wrong
 	 * @see ModelImplEnum
 	 */
-	public boolean fitModel(String outputType, LinkedHashMap<String, Object> modelImplementations) {
+	public String fitModel(String outputType, LinkedHashMap<String, Object> modelImplementations) {
 		if (outputType == null || !getPossibleOutputTypes().contains(outputType)) {
 			throw new InvalidParameterException("The outputType argument should be one of the possible output type (see the getPossibleOutputTypes() method)!");
 		}
@@ -473,10 +473,10 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 			model = selectedWorker.ami;
 			
 			lastFitTimeStamp = new Date(System.currentTimeMillis());
-			return true;
+			return "DONE";
 		} catch (Exception e1) {
 			e1.printStackTrace();
-			return false;
+			return "ERROR: " + e1.getMessage();
 		}
 	}
 
