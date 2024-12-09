@@ -896,12 +896,14 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	
 //	public static void main(String[] args) throws IOException {
 //		
-//		MetaModel m = MetaModel.Load("C:\\Users\\matforti\\OneDrive - NRCan RNCan\\Documents\\7_Developpement\\ModellingProjects\\MetaModelSet\\output\\QC\\2EST\\PET4\\Artemis2009\\QC_2EST_RS38_NoChange_AliveVolume_AllSpecies.zml");
+//		MetaModel.convertToLightVersion("C:\\Users\\matforti\\OneDrive - NRCan RNCan\\Documents\\7_Developpement\\ModellingProjects\\MetaModelSet\\incubator\\QC\\USGCTile184\\PSP\\Artemis2009\\QC_USGCTile184_Tile184_NoChange_AliveAboveGroundBiomass_AllSpecies.zml");
+//		
+//		MetaModel m = MetaModel.Load("C:\\Users\\matforti\\OneDrive - NRCan RNCan\\Documents\\7_Developpement\\ModellingProjects\\MetaModelSet\\incubator\\QC\\USGCTile184\\PSP\\Artemis2009\\QC_USGCTile184_Tile184_NoChange_AliveAboveGroundBiomass_AllSpecies.zml");
 //		
 //		m.scriptResults.remove(10);
 //		m.save("C:\\Users\\matforti\\OneDrive - NRCan RNCan\\Documents\\7_Developpement\\ModellingProjects\\MetaModelSet\\proto\\QC\\3EST\\PET4\\Artemis2009\\QC_3EST_RS38_NoChange_NEW.zml");
 //		int u = 0;
-//		
+		
 //	}
 	
 }

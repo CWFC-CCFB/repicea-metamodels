@@ -37,7 +37,7 @@ public class MetaModelDeserializationTest {
 
 	// IMPORTANT this test must come first to ensure both versions of the meta-model exist.
 	@Test
-	public void conversionTest() throws IOException {
+	public void test01ConversionTest() throws IOException {
 		String metaModelFilename = ObjectUtility.getPackagePath(MetaModelTest.class) + "QC_FMU02664_RE2_NoChange_AliveVolume_AllSpecies.zml";
 		File originalFile = new File(metaModelFilename);
 		if (!originalFile.exists()) {
@@ -65,7 +65,7 @@ public class MetaModelDeserializationTest {
 	}
 
 	@Test
-	public void deserializationTest() throws IOException, MetaModelException {
+	public void test02DeserializationTest() throws IOException, MetaModelException {
 		String metaModelFilename = ObjectUtility.getPackagePath(MetaModelTest.class) + "QC_FMU02664_RE2_NoChange_AliveVolume_AllSpecies.zml";
 		String newFilename = MetaModel.getLightVersionFilename(metaModelFilename);
 
@@ -91,7 +91,7 @@ public class MetaModelDeserializationTest {
 	}
 	
 	@Test
-	public void metaModelManagerTest() throws IOException {
+	public void test03MetaModelManagerTest() throws IOException {
 		String metaModelFilename = ObjectUtility.getPackagePath(MetaModelTest.class) + "QC_FMU02664_RE2_NoChange_AliveVolume_AllSpecies.zml";
 		String newFilename = MetaModel.getLightVersionFilename(metaModelFilename);
 		File newFile = new File(newFilename);
@@ -112,5 +112,35 @@ public class MetaModelDeserializationTest {
 		System.out.println("Loading ratio = " + loadingRatio);
 		Assert.assertTrue("Testing load time for meta model manager", loadingRatio > 15);
 	}
+	
+	@Test
+	public void test04MetaModelManagerTest() throws IOException {
+		String metaModelFilename = ObjectUtility.getPackagePath(MetaModelTest.class) + "QC_USGCTile184_Tile184_NoChange_AliveAboveGroundBiomass_AllSpecies.zml";
+		File originalFile = new File(metaModelFilename);
+		if (!originalFile.exists()) {
+			Assert.fail("The file does not exist: " + metaModelFilename);
+		}
+
+		String newFilename = MetaModel.getLightVersionFilename(metaModelFilename);
+		File newFile = new File(newFilename);
+		if (newFile.exists()) {
+			newFile.delete();
+		}
+		
+		MetaModel.convertToLightVersion(metaModelFilename);
+		
+		if (!newFile.exists()) {
+			Assert.fail("The converted file has not been saved!");
+		}
+
+		long originalFileSize = Files.size(Paths.get(originalFile.toURI()));
+		System.out.println("Original serialization size " + originalFileSize);
+		Assert.assertTrue("Testing file size for original version", originalFileSize > 2E6);
+		long newFileSize = Files.size(Paths.get(newFile.toURI()));
+		System.out.println("Light serialization size " + newFileSize);
+		Assert.assertTrue("Testing file size for light version", newFileSize < 1.1E5);
+	}
+
+	
 	
 }

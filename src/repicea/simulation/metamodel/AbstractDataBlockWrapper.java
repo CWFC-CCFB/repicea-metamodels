@@ -55,7 +55,7 @@ abstract class AbstractDataBlockWrapper extends AbstractMathematicalFunction {
 		Matrix matX = matrixX.getSubMatrix(indices, null);
 		this.vecY = vectorY.getSubMatrix(indices, null);
 		this.timeSinceBeginning = matX.getSubMatrix(0, matX.m_iRows - 1, 1, 1);
-		this.timeToOrigin = matX.getSubMatrix(0, matX.m_iRows - 1, 0, 0).scalarMultiply(-1);
+		this.timeToOrigin = matX.getSubMatrix(0, matX.m_iRows - 1, 0, 0).scalarMultiply(-1d);
 		this.ageYr = matX.getSubMatrix(0, matX.m_iRows - 1, 0, 0).add(timeSinceBeginning);
 		setParameterValue(0, 0d); // potential random effect
 		this.ghq = new GaussHermiteQuadrature();
