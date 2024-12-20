@@ -40,7 +40,7 @@ task sourcesJar(type: Jar) {
 
 java {
   toolchain { 
-        languageVersion = JavaLanguageVersion.of(8)
+        languageVersion = JavaLanguageVersion.of(11)
   }
   withSourcesJar()
   withJavadocJar()
@@ -94,14 +94,10 @@ configurations {
 // make sure to set the compliance to Java 1.8 in the project properties if the Java version is later than 1.8
 // make sure to set Java Compiler > Errors Warnings > Deprecated and Restricted API > Forbidden reference to WARNING instead of ERROR
 dependencies {
-    implementation group: 'io.github.cwfc-ccfb', name: 'repicea', version: '[1.12.0,)'    
-    implementation group: 'io.github.cwfc-ccfb', name: 'repicea-mathstats', version: '[1.5.5,)'    
+    implementation group: 'io.github.cwfc-ccfb', name: 'repicea', version: '[1.13.0,)'    
+    implementation group: 'io.github.cwfc-ccfb', name: 'repicea-mathstats', version: '[1.6.0,)'    
     implementation group: 'io.github.cwfc-ccfb', name: 'repicea-simulation', version: '[1.1.1,)'    
-    implementation 'com.cedarsoftware:json-io:4.14.0'
-
-    if (JavaVersion.current() != JavaVersion.VERSION_1_8) {
- 		implementation 'com.sun.xml.bind:jaxb-ri:2.3.5'   
-	}
+    implementation group: 'com.cedarsoftware', name: 'json-io', version: '[4.30.0,)'
     
     testImplementation "junit:junit:4.13.2"    
 }
@@ -120,6 +116,8 @@ test {
     maxHeapSize = "2048m"
     
     exclude '**/ProductionEnvironmentTest.class'
+    
+//    jvmArgs('--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED')
 }
 
 jar {	

@@ -22,7 +22,6 @@ package repicea.simulation.metamodel;
 import java.lang.reflect.Array;
 import java.security.InvalidParameterException;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -113,9 +112,9 @@ public class ParametersMapUtilities {
 	 * @param parametersForThisModel the list of parameters to be provided for a particular model implementation
 	 * @return a Map of Map instance key1 is the parameter name, key2 refers to the starting value and  prior distribution.
 	 */
-	static Map<String, Map<FormattedParametersMapKey, Object>> formatParametersMap(LinkedHashMap<String, Object>[] unformattedMap, List<String> parametersForThisModel, List<String> nuisanceParms) {
+	static Map<String, Map<FormattedParametersMapKey, Object>> formatParametersMap(Map<String, Object>[] unformattedMap, List<String> parametersForThisModel, List<String> nuisanceParms) {
 		Map<String, Map<FormattedParametersMapKey, Object>> parameterMap = new HashMap<String, Map<FormattedParametersMapKey, Object>>();
-		for (LinkedHashMap<String, Object> entry : unformattedMap) {
+		for (Map<String, Object> entry : unformattedMap) {
 			Map<String, Object> clonedMap = new HashMap<String, Object>();
 			clonedMap.putAll(entry);
 			Map<FormattedParametersMapKey, Object> formattedMap = checkClonedMapMapValidity(clonedMap);
