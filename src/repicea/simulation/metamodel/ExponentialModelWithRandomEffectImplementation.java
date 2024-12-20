@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import repicea.math.Matrix;
@@ -35,7 +36,7 @@ import repicea.stats.data.StatisticalDataException;
  */
 class ExponentialModelWithRandomEffectImplementation extends AbstractMixedModelFullImplementation {
 
-	ExponentialModelWithRandomEffectImplementation(String outputType, MetaModel model, LinkedHashMap<String, Object>[] startingValues) throws StatisticalDataException {
+	ExponentialModelWithRandomEffectImplementation(String outputType, MetaModel model, Map<String, Object>[] startingValues) throws StatisticalDataException {
 		super(outputType, model, startingValues);
 	}
 	

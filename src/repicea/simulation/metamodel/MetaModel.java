@@ -35,15 +35,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
-import com.cedarsoftware.util.io.JsonReader;
-import com.cedarsoftware.util.io.JsonWriter;
+import com.cedarsoftware.io.JsonIo;
+import com.cedarsoftware.io.JsonReader;
+import com.cedarsoftware.io.JsonWriter;
+import com.cedarsoftware.io.WriteOptionsBuilder;
 
 import repicea.io.FileUtility;
 import repicea.io.Saveable;
 import repicea.math.Matrix;
 import repicea.math.SymmetricMatrix;
+import repicea.serial.PostUnmarshalling;
 import repicea.serial.SerializerChangeMonitor;
-import repicea.serial.xml.PostXmlUnmarshalling;
 import repicea.serial.xml.XmlDeserializer;
 import repicea.serial.xml.XmlSerializer;
 import repicea.simulation.metamodel.ParametersMapUtilities.InputParametersMapKey;
@@ -62,7 +64,7 @@ import repicea.util.REpiceaLogManager;
  * 
  * @author Mathieu Fortin - December 2020
  */
-public class MetaModel implements Saveable, PostXmlUnmarshalling {
+public class MetaModel implements Saveable, PostUnmarshalling {
 		
 	static {
 		SerializerChangeMonitor.registerClassNameChange("repicea.stats.mcmc.MetropolisHastingsParameters",
@@ -224,19 +226,20 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private static LinkedHashMap<String, Object>[] convertJSONStrToLinkedHashMapArray(String jsonLinkedHashMap) {
-		Object o = JsonReader.jsonToJava(jsonLinkedHashMap, null);
+	private static Map<String, Object>[] convertJSONStrToLinkedHashMapArray(String jsonLinkedHashMap) {
+//		Object o = JsonReader.jsonToJava(jsonLinkedHashMap, null);
+		Object o = JsonIo.toObjects(jsonLinkedHashMap, null, LinkedHashMap.class);
 		if (!o.getClass().isArray()) {
 			throw new InvalidParameterException("The JSON string should stand for an array of LinkedHashMap instances!");
 		}
 		int length = Array.getLength(o);
-		LinkedHashMap<String, Object>[] mapArray = new LinkedHashMap[length];
+		Map<String, Object>[] mapArray = new Map[length];
 		for (int i = 0; i < length; i++) {
 			Object innerMap = Array.get(o, i);
-			if (!(innerMap instanceof LinkedHashMap)) {
-				throw new InvalidParameterException("The JSON string should stand for an array of LinkedHashMap instances!");
+			if (!(innerMap instanceof Map)) {
+				throw new InvalidParameterException("The JSON string should stand for an array of Map instances!");
 			}
-			mapArray[i] = (LinkedHashMap) innerMap;
+			mapArray[i] = (Map) innerMap;
 		}
 		return mapArray;
 	}
@@ -298,7 +301,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 		}
 	}
 
-	private AbstractModelImplementation getInnerModel(String outputType, ModelImplEnum modelImplEnum, LinkedHashMap<String, Object>[] startingValues)
+	private AbstractModelImplementation getInnerModel(String outputType, ModelImplEnum modelImplEnum, Map<String, Object>[] startingValues)
 			throws StatisticalDataException {
 		AbstractModelImplementation model;
 		switch (modelImplEnum) {
@@ -397,8 +400,8 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 	}
 
 	@SuppressWarnings({ "unchecked"})
-	private static LinkedHashMap<ModelImplEnum, LinkedHashMap<String, Object>[]> formatModelImplementationMap(Map<String, Object> modelImplementations) {
-		LinkedHashMap<ModelImplEnum, LinkedHashMap<String, Object>[]> myImplementations = new LinkedHashMap<ModelImplEnum, LinkedHashMap<String, Object>[]>();
+	private static LinkedHashMap<ModelImplEnum, Map<String, Object>[]> formatModelImplementationMap(Map<String, Object> modelImplementations) {
+		LinkedHashMap<ModelImplEnum, Map<String, Object>[]> myImplementations = new LinkedHashMap<ModelImplEnum, Map<String, Object>[]>();
 		for (String impl : modelImplementations.keySet()) {
 			ModelImplEnum myImpl = null;
 			try { 
@@ -423,7 +426,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 						}
 					}
 				} else if (value instanceof String) {
-					LinkedHashMap<String,Object>[] startingValues = MetaModel.convertJSONStrToLinkedHashMapArray((String) value);
+					Map<String,Object>[] startingValues = MetaModel.convertJSONStrToLinkedHashMapArray((String) value);
 					myImplementations.put(myImpl, startingValues);
 				} else {
 					throw new InvalidParameterException("The type of object in the values of the modelImplementations map should be arrays of LinkedHashMap instances or a JSON representation of this array!");
@@ -450,7 +453,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 			throw new InvalidParameterException("The modelImplementationStrings argument should be a Map!");
 		}
 		
-		LinkedHashMap<ModelImplEnum, LinkedHashMap<String, Object>[]> formattedModelImplementations = formatModelImplementationMap(modelImplementations);
+		LinkedHashMap<ModelImplEnum, Map<String, Object>[]> formattedModelImplementations = formatModelImplementationMap(modelImplementations);
 		
 		model = null; // reset the convergence to false
 		
@@ -459,7 +462,7 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 			List<InnerWorker> modelList = new ArrayList<InnerWorker>();
 
 			for (ModelImplEnum e : formattedModelImplementations.keySet()) {
-				LinkedHashMap<String, Object>[] startingValues = formattedModelImplementations.get(e);
+				Map<String, Object>[] startingValues = formattedModelImplementations.get(e);
 				InnerWorker w = new InnerWorker(getInnerModel(outputType, e, startingValues));
 				w.start();
 				modelList.add(w);
@@ -708,10 +711,16 @@ public class MetaModel implements Saveable, PostXmlUnmarshalling {
 					
 			FileOutputStream os = new FileOutputStream(FileUtility.replaceExtensionBy(filename, "json"));
 			
-			Map<String, Object> options = new HashMap<String, Object>();
-			options.put(JsonWriter.PRETTY_PRINT, true);
-			options.put(JsonWriter.DATE_FORMAT, JsonWriter.ISO_DATE_TIME_FORMAT+"Z");
-			JsonWriter jw = new JsonWriter(os, options);
+//			Map<String, Object> options = new HashMap<String, Object>();
+//			options.put(JsonWriter.PRETTY_PRINT, true);
+//			options.put(JsonWriter.DATE_FORMAT, JsonWriter.ISO_DATE_TIME_FORMAT+"Z");
+//			JsonWriter jw = new JsonWriter(os, options);
+			
+			WriteOptionsBuilder builder = new WriteOptionsBuilder();
+			builder.prettyPrint(true);
+			builder.dateTimeFormat(WriteOptionsBuilder.ISO_DATE_TIME_FORMAT+"Z");
+			JsonWriter jw = new JsonWriter(os, builder.build());
+			
 			jw.write(data);	
 			jw.close();
 		}
