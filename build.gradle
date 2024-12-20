@@ -99,6 +99,9 @@ dependencies {
     implementation group: 'io.github.cwfc-ccfb', name: 'repicea-simulation', version: '[1.1.1,)'    
     implementation group: 'com.cedarsoftware', name: 'json-io', version: '[4.30.0,)'
     
+  	implementation group: 'com.sun.xml.bind', name:'jaxb-ri', version: '[2.3.5,)'   
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '[2.14.2,)'
+    
     testImplementation "junit:junit:4.13.2"    
 }
 
