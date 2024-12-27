@@ -40,7 +40,7 @@ task sourcesJar(type: Jar) {
 
 java {
   toolchain { 
-        languageVersion = JavaLanguageVersion.of(11)
+        languageVersion = JavaLanguageVersion.of(8)
   }
   withSourcesJar()
   withJavadocJar()
@@ -51,6 +51,7 @@ repositories {
 		url "https://repo1.maven.org/maven2/"
 	}
     mavenCentral()
+    mavenLocal()
 }
 
 println "Using java version " + JavaVersion.current()
@@ -94,12 +95,11 @@ configurations {
 // make sure to set the compliance to Java 1.8 in the project properties if the Java version is later than 1.8
 // make sure to set Java Compiler > Errors Warnings > Deprecated and Restricted API > Forbidden reference to WARNING instead of ERROR
 dependencies {
-    implementation group: 'io.github.cwfc-ccfb', name: 'repicea', version: '[1.13.0,)'    
-    implementation group: 'io.github.cwfc-ccfb', name: 'repicea-mathstats', version: '[1.6.0,)'    
-    implementation group: 'io.github.cwfc-ccfb', name: 'repicea-simulation', version: '[1.1.1,)'    
-    implementation group: 'com.cedarsoftware', name: 'json-io', version: '[4.30.0,)'
+    implementation group: 'io.github.cwfc-ccfb', name: 'repicea', version: '[1.14.1,)'    
+    implementation group: 'io.github.cwfc-ccfb', name: 'repicea-mathstats', version: '[1.6.1,)'    
+    implementation group: 'io.github.cwfc-ccfb', name: 'repicea-simulation', version: '[1.2.2,)'    
     
-  	implementation group: 'com.sun.xml.bind', name:'jaxb-ri', version: '[2.3.5,)'   
+    implementation group: 'com.cedarsoftware', name: 'json-io', version: '[4.30.0,)'
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '[2.14.2,)'
     
     testImplementation "junit:junit:4.13.2"    

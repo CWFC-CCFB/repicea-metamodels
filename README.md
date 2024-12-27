@@ -29,7 +29,7 @@ License for more details.
 
 Please see the license at http://www.gnu.org/copyleft/lesser.html.
 
-This library is compiled under Java 11. 
+This library is compiled under Java 8. 
 
 This library relies on 
 - repicea (https://github.com/CWFC-CCFB/repicea) which is licensed under 
