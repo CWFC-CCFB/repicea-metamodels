@@ -42,14 +42,14 @@ public class ParametersMapUtilities {
 	 * <li> <b>Parameter</b>: the parameter name (string)
 	 * <li> <b>StartingValue</b>: the starting value (double)
 	 * <li> <b>Distribution</b>: the name of the distribution (e.g. Uniform)
-	 * <li> <b>DistParms</b>: an array of doubles standing for the distribution parameters
+	 * <li> <b>DistParms</b>: a List of doubles standing for the distribution parameters
 	 * </ul>
 	 */
 	public static enum InputParametersMapKey {
 		Parameter(String.class),
 		StartingValue(Double.class),
 		Distribution(String.class),
-		DistParms(Double[].class);
+		DistParms(List.class);
 		
 		final Class<?> expectedClass;
 		
@@ -63,6 +63,7 @@ public class ParametersMapUtilities {
 		PriorDistribution;
 	}
 
+	@SuppressWarnings("rawtypes")
 	private static Map<FormattedParametersMapKey, Object> checkClonedMapMapValidity(Map<String, Object> clonedMap) {
 		Map<FormattedParametersMapKey, Object> formattedInnerMap = new HashMap<FormattedParametersMapKey, Object>(); 
 		for (InputParametersMapKey key : InputParametersMapKey.values()) {
@@ -70,17 +71,22 @@ public class ParametersMapUtilities {
 				throw new InvalidParameterException("The parameter map should contain key: " + key.name() + " !");
 			}
 			Object value = clonedMap.get(key.name());
-			if (!key.expectedClass.isAssignableFrom(value.getClass())) {
+			if (!key.expectedClass.isAssignableFrom(value.getClass()) || key == InputParametersMapKey.DistParms) { // distParms is a list but its element are not formatted
 				if (key.expectedClass.equals(String.class)) {
 					clonedMap.put(key.name(), value.toString());
 				} else if (key.expectedClass.equals(Double.class)) {
 					clonedMap.put(key.name(), Double.parseDouble(value.toString()));
-				} else if (key.expectedClass.equals(Double[].class)) {
-					if (value.getClass().isArray()) {
-						int arrayLength = Array.getLength(value);
+				} else if (key.expectedClass.equals(List.class)) {
+					boolean isArray = value.getClass().isArray();
+					if (value instanceof List || isArray) {
+						int arrayLength = isArray ?
+								Array.getLength(value) :
+									((List) value).size();
 						Double[] doubleArray = new Double[arrayLength];
 						for (int j = 0; j < arrayLength; j++) {
-							doubleArray[j] = Double.parseDouble(Array.get(value, j).toString());
+							doubleArray[j] = Double.parseDouble(isArray ? 
+									Array.get(value, j).toString() : 
+										((List) value).get(j).toString());
 						}
 						clonedMap.put(key.name(), doubleArray);
 					} else {

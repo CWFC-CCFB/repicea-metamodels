@@ -23,22 +23,21 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.security.InvalidParameterException;
+import java.text.DateFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
-import com.cedarsoftware.io.JsonIo;
-import com.cedarsoftware.io.JsonReader;
-import com.cedarsoftware.io.JsonWriter;
-import com.cedarsoftware.io.WriteOptionsBuilder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import repicea.io.FileUtility;
 import repicea.io.Saveable;
@@ -226,20 +225,21 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 	
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private static Map<String, Object>[] convertJSONStrToLinkedHashMapArray(String jsonLinkedHashMap) {
+	private static Map<String, Object>[] convertJSONStrToLinkedHashMapArray(String jsonLinkedHashMap) throws JsonMappingException, JsonProcessingException {
 //		Object o = JsonReader.jsonToJava(jsonLinkedHashMap, null);
-		Object o = JsonIo.toObjects(jsonLinkedHashMap, null, LinkedHashMap.class);
-		if (!o.getClass().isArray()) {
-			throw new InvalidParameterException("The JSON string should stand for an array of LinkedHashMap instances!");
+//		Object o = JsonIo.toObjects(jsonLinkedHashMap, null, LinkedHashMap.class);
+		ObjectMapper om = new ObjectMapper();
+		Object o = om.readValue(jsonLinkedHashMap, Object.class);
+		if (!(o instanceof List)) {
+			throw new InvalidParameterException("The JSON string should stand for a list!");
 		}
-		int length = Array.getLength(o);
-		Map<String, Object>[] mapArray = new Map[length];
-		for (int i = 0; i < length; i++) {
-			Object innerMap = Array.get(o, i);
-			if (!(innerMap instanceof Map)) {
+		Map<String, Object>[] mapArray = new Map[((List) o).size()];
+		int i = 0;
+		for (Object oo : (List) o) {
+			if (!(oo instanceof Map)) {
 				throw new InvalidParameterException("The JSON string should stand for an array of Map instances!");
 			}
-			mapArray[i] = (Map) innerMap;
+			mapArray[i++] = (Map) oo;
 		}
 		return mapArray;
 	}
@@ -400,7 +400,7 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 	}
 
 	@SuppressWarnings({ "unchecked"})
-	private static LinkedHashMap<ModelImplEnum, Map<String, Object>[]> formatModelImplementationMap(Map<String, Object> modelImplementations) {
+	private static LinkedHashMap<ModelImplEnum, Map<String, Object>[]> formatModelImplementationMap(Map<String, Object> modelImplementations) throws JsonMappingException, JsonProcessingException {
 		LinkedHashMap<ModelImplEnum, Map<String, Object>[]> myImplementations = new LinkedHashMap<ModelImplEnum, Map<String, Object>[]>();
 		for (String impl : modelImplementations.keySet()) {
 			ModelImplEnum myImpl = null;
@@ -443,9 +443,11 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 	 * @param outputType the output type the model will be fitted to (e.g., volumeAlive_Coniferous)
 	 * @param modelImplementations a Map of List of strings that are the names of the ModelImplEnum constants
 	 * @return a string either DONE or ERROR: [...] if something went wrong
+	 * @throws JsonProcessingException 
+	 * @throws JsonMappingException 
 	 * @see ModelImplEnum
 	 */
-	public String fitModel(String outputType, LinkedHashMap<String, Object> modelImplementations) {
+	public String fitModel(String outputType, LinkedHashMap<String, Object> modelImplementations) throws JsonMappingException, JsonProcessingException {
 		if (outputType == null || !getPossibleOutputTypes().contains(outputType)) {
 			throw new InvalidParameterException("The outputType argument should be one of the possible output type (see the getPossibleOutputTypes() method)!");
 		}
@@ -716,13 +718,16 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 //			options.put(JsonWriter.DATE_FORMAT, JsonWriter.ISO_DATE_TIME_FORMAT+"Z");
 //			JsonWriter jw = new JsonWriter(os, options);
 			
-			WriteOptionsBuilder builder = new WriteOptionsBuilder();
-			builder.prettyPrint(true);
-			builder.dateTimeFormat(WriteOptionsBuilder.ISO_DATE_TIME_FORMAT+"Z");
-			JsonWriter jw = new JsonWriter(os, builder.build());
-			
-			jw.write(data);	
-			jw.close();
+//			WriteOptionsBuilder builder = new WriteOptionsBuilder();
+//			builder.prettyPrint(true);
+//			builder.dateTimeFormat(WriteOptionsBuilder.ISO_DATE_TIME_FORMAT+"Z");
+//			JsonWriter jw = new JsonWriter(os, builder.build());
+//			
+//			jw.write(data);	
+//			jw.close();
+			ObjectMapper om = new ObjectMapper();
+			om.setDateFormat(DateFormat.getDateInstance(DateFormat.FULL));
+			om.writeValue(os, data);
 		}
 	}
 

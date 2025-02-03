@@ -21,10 +21,8 @@
 package repicea.simulation.metamodel;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -33,9 +31,7 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
-import com.cedarsoftware.io.JsonIo;
-import com.cedarsoftware.io.JsonWriter;
-import com.cedarsoftware.io.WriteOptionsBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import repicea.math.Matrix;
 import repicea.serial.SerializerChangeMonitor;
@@ -165,7 +161,7 @@ public class MetaModelTest {
 	 */
 	@SuppressWarnings("unchecked")
 	@Test
-	public void test07JSONParameterisation() throws MetaModelException {
+	public void test07JSONParameterisation() throws Exception {
 		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[4];
 		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "710", "Uniform", new String[] {"0", "2000"}});
 		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.008", "Uniform", new String[] {"0.00001", "0.05"}});
@@ -175,7 +171,9 @@ public class MetaModelTest {
 //		Map<String, Object> args = new HashMap<String, Object>();
 //		args.put(JsonWriter.TYPE, false);
 //		String jsonStr = JsonWriter.objectToJson(parms, args);
-		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+//		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+		ObjectMapper om = new ObjectMapper();
+		String jsonStr = om.writeValueAsString(parms);
 		
 		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
 		startingValuesMap.put(ModelImplEnum.ChapmanRichardsDerivative.name(), jsonStr);
@@ -187,7 +185,7 @@ public class MetaModelTest {
 
 	@SuppressWarnings("unchecked")
 	@Test
-	public void test08ExponentialModelForStemDensity() throws IOException {
+	public void test08ExponentialModelForStemDensity() throws Exception {
 		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_6OUEST_STR_ME1_6OUEST_NoChange_AliveVolume_AllSpecies.zml";
 		MetaModel m = MetaModel.Load(filename);
 		m.getMetropolisHastingsParameters().nbBurnIn = 1000;
@@ -203,7 +201,9 @@ public class MetaModelTest {
 //		Map<String, Object> args = new HashMap<String, Object>();
 //		args.put(JsonWriter.TYPE, false);
 //		String jsonStr = JsonWriter.objectToJson(parms, args);
-		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+//		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+		ObjectMapper om = new ObjectMapper();
+		String jsonStr = om.writeValueAsString(parms);
 
 		
 		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
@@ -216,7 +216,7 @@ public class MetaModelTest {
 
 	@SuppressWarnings("unchecked")
 	@Test
-	public void test09ExponentialModelWithRandomEffectForStemDensity() throws IOException {
+	public void test09ExponentialModelWithRandomEffectForStemDensity() throws Exception {
 		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_6OUEST_STR_ME1_6OUEST_NoChange_AliveVolume_AllSpecies.zml";
 		MetaModel m = MetaModel.Load(filename);
 		m.getMetropolisHastingsParameters().nbBurnIn = 1000;
@@ -233,7 +233,9 @@ public class MetaModelTest {
 //		Map<String, Object> args = new HashMap<String, Object>();
 //		args.put(JsonWriter.TYPE, false);
 //		String jsonStr = JsonWriter.objectToJson(parms, args);
-		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+//		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+		ObjectMapper om = new ObjectMapper();
+		String jsonStr = om.writeValueAsString(parms);
 
 		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
 		startingValuesMap.put(ModelImplEnum.ExponentialWithRandomEffect.name(), jsonStr);
@@ -246,7 +248,7 @@ public class MetaModelTest {
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Test
-	public void test10ExponentialWithAndWithoutRandomEffectsForStemDensity() throws IOException {
+	public void test10ExponentialWithAndWithoutRandomEffectsForStemDensity() throws Exception {
 		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_6OUEST_STR_ME1_6OUEST_NoChange_AliveVolume_AllSpecies.zml";
 		MetaModel m = MetaModel.Load(filename);
 		m.getMetropolisHastingsParameters().nbBurnIn = 1000;
@@ -262,7 +264,9 @@ public class MetaModelTest {
 //		Map<String, Object> args = new HashMap<String, Object>();
 //		args.put(JsonWriter.TYPE, false);
 //		String jsonStr = JsonWriter.objectToJson(parms, args);
-		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+//		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+		ObjectMapper om = new ObjectMapper();
+		String jsonStr = om.writeValueAsString(parms);
 		
 		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
 		startingValuesMap.put(ModelImplEnum.Exponential.name(), jsonStr);
@@ -274,7 +278,8 @@ public class MetaModelTest {
 		parms[3] = MetaModel.convertParameters(new Object[] {AbstractMixedModelFullImplementation.RANDOM_EFFECT_STD, "1000", "Uniform", new String[] {"0", "3000"}});
 
 //		jsonStr = JsonWriter.objectToJson(parms, args);
-		jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+//		jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+		jsonStr = om.writeValueAsString(parms);
 		startingValuesMap.put(ModelImplEnum.ExponentialWithRandomEffect.name(), jsonStr);
 		
 		m.fitModel("AliveStemDensity_AllSpecies", startingValuesMap);
@@ -289,7 +294,7 @@ public class MetaModelTest {
 	
 	@SuppressWarnings("unchecked")
 	@Test
-	public void test11ModifiedChapmanRichardsDerivativeForStemDensity() throws IOException {
+	public void test11ModifiedChapmanRichardsDerivativeForStemDensity() throws Exception {
 		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_6OUEST_STR_ME1_6OUEST_NoChange_AliveVolume_AllSpecies.zml";
 		MetaModel m = MetaModel.Load(filename);
 		m.getMetropolisHastingsParameters().nbBurnIn = 1000;
@@ -308,8 +313,10 @@ public class MetaModelTest {
 //		Map<String, Object> args = new HashMap<String, Object>();
 //		args.put(JsonWriter.TYPE, false);
 //		String jsonStr = JsonWriter.objectToJson(parms, args);
-		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
-		
+//		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+		ObjectMapper om = new ObjectMapper();
+		String jsonStr = om.writeValueAsString(parms);
+	
 		
 		startingValuesMap.put(ModelImplEnum.ModifiedChapmanRichardsDerivative.name(), jsonStr);
 		
@@ -321,7 +328,7 @@ public class MetaModelTest {
 
 	@SuppressWarnings("unchecked")
 	@Test
-	public void test12ModifiedChapmanRichardsDerivativeWithRandomEffectForStemDensity() throws IOException {
+	public void test12ModifiedChapmanRichardsDerivativeWithRandomEffectForStemDensity() throws Exception {
 		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_6OUEST_STR_ME1_6OUEST_NoChange_AliveVolume_AllSpecies.zml";
 		MetaModel m = MetaModel.Load(filename);
 		m.getMetropolisHastingsParameters().nbBurnIn = 1000;
@@ -341,7 +348,9 @@ public class MetaModelTest {
 //		Map<String, Object> args = new HashMap<String, Object>();
 //		args.put(JsonWriter.TYPE, false);
 //		String jsonStr = JsonWriter.objectToJson(parms, args);
-		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+//		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+		ObjectMapper om = new ObjectMapper();
+		String jsonStr = om.writeValueAsString(parms);
 		
 		startingValuesMap.put(ModelImplEnum.ModifiedChapmanRichardsDerivativeWithRandomEffect.name(), jsonStr);
 		
@@ -425,7 +434,6 @@ public class MetaModelTest {
 		System.out.println(summary);
 	}
 
-	@SuppressWarnings("unchecked")
 	public static void main(String[] args) throws IOException, MetaModelException {
 		String path = ObjectUtility.getPackagePath(MetaModelTest.class);
 		String metaModelFilename = path + "metaModelRS38Test.zml";
