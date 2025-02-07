@@ -225,7 +225,7 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 	
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private static Map<String, Object>[] convertJSONStrToLinkedHashMapArray(String jsonLinkedHashMap) throws JsonMappingException, JsonProcessingException {
+	private static Map<String, Object>[] convertJSONStrToLinkedHashMapArray(String jsonLinkedHashMap) throws IOException {
 //		Object o = JsonReader.jsonToJava(jsonLinkedHashMap, null);
 //		Object o = JsonIo.toObjects(jsonLinkedHashMap, null, LinkedHashMap.class);
 		ObjectMapper om = new ObjectMapper();
@@ -400,7 +400,7 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 	}
 
 	@SuppressWarnings({ "unchecked"})
-	private static LinkedHashMap<ModelImplEnum, Map<String, Object>[]> formatModelImplementationMap(Map<String, Object> modelImplementations) throws JsonMappingException, JsonProcessingException {
+	private static LinkedHashMap<ModelImplEnum, Map<String, Object>[]> formatModelImplementationMap(Map<String, Object> modelImplementations) throws IOException {
 		LinkedHashMap<ModelImplEnum, Map<String, Object>[]> myImplementations = new LinkedHashMap<ModelImplEnum, Map<String, Object>[]>();
 		for (String impl : modelImplementations.keySet()) {
 			ModelImplEnum myImpl = null;
@@ -443,11 +443,10 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 	 * @param outputType the output type the model will be fitted to (e.g., volumeAlive_Coniferous)
 	 * @param modelImplementations a Map of List of strings that are the names of the ModelImplEnum constants
 	 * @return a string either DONE or ERROR: [...] if something went wrong
-	 * @throws JsonProcessingException 
-	 * @throws JsonMappingException 
+	 * @throws IOException if an error occurs while parsing the JSON string
 	 * @see ModelImplEnum
 	 */
-	public String fitModel(String outputType, LinkedHashMap<String, Object> modelImplementations) throws JsonMappingException, JsonProcessingException {
+	public String fitModel(String outputType, LinkedHashMap<String, Object> modelImplementations) throws IOException {
 		if (outputType == null || !getPossibleOutputTypes().contains(outputType)) {
 			throw new InvalidParameterException("The outputType argument should be one of the possible output type (see the getPossibleOutputTypes() method)!");
 		}

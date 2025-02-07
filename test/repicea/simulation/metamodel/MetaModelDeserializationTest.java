@@ -19,15 +19,20 @@
 package repicea.simulation.metamodel;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
+//import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import repicea.simulation.metamodel.MetaModel.PredictionVarianceOutputType;
 import repicea.util.ObjectUtility;
@@ -36,6 +41,7 @@ import repicea.util.ObjectUtility;
 public class MetaModelDeserializationTest {
 
 	// IMPORTANT this test must come first to ensure both versions of the meta-model exist.
+//	@Ignore
 	@Test
 	public void test01ConversionTest() throws IOException {
 		String metaModelFilename = ObjectUtility.getPackagePath(MetaModelTest.class) + "QC_FMU02664_RE2_NoChange_AliveVolume_AllSpecies.zml";
@@ -64,6 +70,7 @@ public class MetaModelDeserializationTest {
 		Assert.assertTrue("Testing file size for light version", newFileSize < 50000);
 	}
 
+//	@Ignore
 	@Test
 	public void test02DeserializationTest() throws IOException, MetaModelException {
 		String metaModelFilename = ObjectUtility.getPackagePath(MetaModelTest.class) + "QC_FMU02664_RE2_NoChange_AliveVolume_AllSpecies.zml";
@@ -90,6 +97,7 @@ public class MetaModelDeserializationTest {
 		Assert.assertEquals("Testing predictions", expected, actual, 1E-8);
 	}
 	
+//	@Ignore
 	@Test
 	public void test03MetaModelManagerTest() throws IOException {
 		String metaModelFilename = ObjectUtility.getPackagePath(MetaModelTest.class) + "QC_FMU02664_RE2_NoChange_AliveVolume_AllSpecies.zml";
@@ -112,7 +120,8 @@ public class MetaModelDeserializationTest {
 		System.out.println("Loading ratio = " + loadingRatio);
 		Assert.assertTrue("Testing load time for meta model manager", loadingRatio > 15);
 	}
-	
+
+//	@Ignore
 	@Test
 	public void test04MetaModelManagerTest() throws IOException {
 		String metaModelFilename = ObjectUtility.getPackagePath(MetaModelTest.class) + "QC_USGCTile184_Tile184_NoChange_AliveAboveGroundBiomass_AllSpecies.zml";
@@ -141,6 +150,21 @@ public class MetaModelDeserializationTest {
 		Assert.assertTrue("Testing file size for light version", newFileSize < 1.1E5);
 	}
 
-	
+	@SuppressWarnings("rawtypes")
+	@Test
+	public void test05MetaModelMetaDataDeserialization() throws Exception {
+		String metaDataFileOld = ObjectUtility.getPackagePath(getClass()) + "QC_2EST_MJ12_NoChange_AliveVolume_Coniferous.json"; 
+		ObjectMapper om = new ObjectMapper();
+		InputStream is = new FileInputStream(metaDataFileOld);
+		LinkedHashMap map1 = om.readValue(is, LinkedHashMap.class);
+		MetaModelMetaData metaData1 = MetaModelMetaData.deserializeFromJSONLinkedHashMap(map1);
+		Assert.assertEquals("Testing upscaling map size", 4, metaData1.growth.upscaling.size());
+		String metaDataFileNew = ObjectUtility.getPackagePath(getClass()) + "QC_2EST_MJ12-EO_NoChange_AliveVolume_Broadleaved.json"; 
+		ObjectMapper om2 = new ObjectMapper();
+		InputStream is2 = new FileInputStream(metaDataFileNew);
+		LinkedHashMap map2 = om2.readValue(is2, LinkedHashMap.class);
+		MetaModelMetaData metaData2 = MetaModelMetaData.deserializeFromJSONLinkedHashMap(map2);
+		Assert.assertEquals("Testing upscaling map size", 3, metaData2.growth.upscaling.size());
+	}
 	
 }
