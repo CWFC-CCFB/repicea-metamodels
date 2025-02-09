@@ -19,9 +19,7 @@
 package repicea.simulation.metamodel;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.LinkedHashMap;
@@ -31,8 +29,6 @@ import org.junit.FixMethodOrder;
 //import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import repicea.simulation.metamodel.MetaModel.PredictionVarianceOutputType;
 import repicea.util.ObjectUtility;
@@ -150,21 +146,18 @@ public class MetaModelDeserializationTest {
 		Assert.assertTrue("Testing file size for light version", newFileSize < 1.1E5);
 	}
 
-	@SuppressWarnings("rawtypes")
 	@Test
-	public void test05MetaModelMetaDataDeserialization() throws Exception {
+	public void test05MetaModelMetaDataDeserialization() {
 		String metaDataFileOld = ObjectUtility.getPackagePath(getClass()) + "QC_2EST_MJ12_NoChange_AliveVolume_Coniferous.json"; 
-		ObjectMapper om = new ObjectMapper();
-		InputStream is = new FileInputStream(metaDataFileOld);
-		LinkedHashMap map1 = om.readValue(is, LinkedHashMap.class);
-		MetaModelMetaData metaData1 = MetaModelMetaData.deserializeFromJSONLinkedHashMap(map1);
+		MetaModelMetaData metaData1 = MetaModelMetaData.deserializeFromJSONFile(metaDataFileOld);
 		Assert.assertEquals("Testing upscaling map size", 4, metaData1.growth.upscaling.size());
+		Assert.assertEquals("Testing leading species", "QC", metaData1.growth.geoRegion);
+		Assert.assertEquals("Testing leading species", "None", metaData1.fit.leadingSpecies);
 		String metaDataFileNew = ObjectUtility.getPackagePath(getClass()) + "QC_2EST_MJ12-EO_NoChange_AliveVolume_Broadleaved.json"; 
-		ObjectMapper om2 = new ObjectMapper();
-		InputStream is2 = new FileInputStream(metaDataFileNew);
-		LinkedHashMap map2 = om2.readValue(is2, LinkedHashMap.class);
-		MetaModelMetaData metaData2 = MetaModelMetaData.deserializeFromJSONLinkedHashMap(map2);
+		MetaModelMetaData metaData2 = MetaModelMetaData.deserializeFromJSONFile(metaDataFileNew);
 		Assert.assertEquals("Testing upscaling map size", 3, metaData2.growth.upscaling.size());
+		Assert.assertEquals("Testing leading species", "QC", metaData2.growth.geoRegion);
+		Assert.assertEquals("Testing leading species", "EO", metaData2.fit.leadingSpecies);
 	}
 	
 }
