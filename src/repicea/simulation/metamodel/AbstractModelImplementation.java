@@ -384,7 +384,12 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	
 	abstract Matrix getFirstDerivative(double ageYr, double timeSinceBeginning, double r1);
 
-	final double getPredictionVariance(double ageYr, double timeSinceBeginning, double r1) {
+	/*
+	 * This method has to be synchronized to avoid ConcurrentModificationException.<p>
+	 * The ConcurrentModificationException arises in the Matrix.getSubMatrix method when
+	 * it sorts the vector of integers. 
+	 */
+	final synchronized double getPredictionVariance(double ageYr, double timeSinceBeginning, double r1) {
 		if (mh.getParameterCovarianceMatrix() == null) {
 			throw new InvalidParameterException("The variance-covariance matrix of the parameter estimates has not been set!");
 		}
