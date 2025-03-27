@@ -280,22 +280,17 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 	 */
 	public void addScriptResult(int initialAge, ScriptResult result) {
 		addStratumAgeFieldToInnerDataSet(result.getDataSet(), initialAge);
-		boolean canBeAdded;
-		if (scriptResults.isEmpty()) {
-			canBeAdded = true;
-		} else {
+		String differences = "";
+		if (!scriptResults.isEmpty()) {
 			ScriptResult previousResult = scriptResults.values().iterator().next();
-			if (previousResult.isCompatible(result)) {
-				canBeAdded = true;
-			} else {
-				canBeAdded = false;
-			}
+			differences = previousResult.checkForDifferences(previousResult);
 		}
-		if (canBeAdded) {
+		
+		if (differences.length() == 0) { // there is no difference then or it is the first ScriptResult to be stored in the map
 			scriptResults.put(initialAge, result);
 			model = null; // so that convergence is set to false by default	
 		} else {
-			throw new InvalidParameterException("The result parameter is not compatible with previous results in the map!");
+			throw new UnsupportedOperationException("MetaModel.addScriptResult(): " + differences);
 		}
 	}
 
