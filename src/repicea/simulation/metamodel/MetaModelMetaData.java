@@ -22,11 +22,14 @@ package repicea.simulation.metamodel;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -41,7 +44,11 @@ public class MetaModelMetaData {
 			
 	private static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 	private static SimpleDateFormat DATE_FORMAT_OLD = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-	private static SimpleDateFormat DATE_FORMAT_NEW = new SimpleDateFormat("EEEE, MMMMM d, yyyy");
+	private static List<DateFormat> DATE_FORMATS = new ArrayList<DateFormat>();
+	static {
+		DATE_FORMATS.add(DateFormat.getDateInstance(DateFormat.FULL, Locale.ENGLISH));
+		DATE_FORMATS.add(DateFormat.getDateInstance(DateFormat.FULL, Locale.FRENCH));
+	}
 	
 	public class Growth {
 		public String geoRegion;  	// ex : QC
@@ -82,6 +89,22 @@ public class MetaModelMetaData {
 		this.fit = new MetaModelMetaData.Fit();
 	}	
 
+	
+	private static Date parseDate(String dateStr) {
+		Date d = null;
+		for (DateFormat dateFormat : DATE_FORMATS) {
+			try {
+				d = dateFormat.parse(dateStr);
+				break;
+			} catch (ParseException e) {}
+		}
+		if (d == null) {
+			throw new UnsupportedOperationException("Unable to parse date " + dateStr);
+		} else {
+			return d;
+		}
+	}
+	
 	/**
 	 * Produce a MetaModelMetaData from a JSON LinkedHashMap.
 	 * @param jsonFilename the path to a JSON file.
@@ -122,7 +145,7 @@ public class MetaModelMetaData {
 					String dateString = fitMap.get("timeStamp").toString();
 					Date d = formerJSONIOImplementation ?
 							DATE_FORMAT_OLD.parse(dateString) :
-								DATE_FORMAT_NEW.parse(dateString);
+								parseDate(dateString);
 					metaData.fit.timeStamp = d;
 				}
 				metaData.fit.fitModel = (String) fitMap.get("fitModel");

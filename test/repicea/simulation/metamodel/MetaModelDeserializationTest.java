@@ -22,7 +22,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.DateFormat;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
@@ -159,5 +161,13 @@ public class MetaModelDeserializationTest {
 		Assert.assertEquals("Testing leading species", "QC", metaData2.growth.geoRegion);
 		Assert.assertEquals("Testing leading species", "EO", metaData2.fit.leadingSpecies);
 	}
-	
+
+	@Test
+	public void test06MetaModelMetaDataFrenchDateFormatDeserialization() {
+		String metaDataFileFrenchDateFormat = ObjectUtility.getPackagePath(getClass()) + "QC_2EST_FE22_NoChange_AliveVolume_AllSpecies.json"; 
+		MetaModelMetaData metaData1 = MetaModelMetaData.deserializeFromJSONFile(metaDataFileFrenchDateFormat);
+		String dateStr = DateFormat.getDateInstance(DateFormat.FULL, Locale.ENGLISH).format(metaData1.fit.timeStamp);
+		Assert.assertEquals("Testing date conversion from French to English", "Friday, April 4, 2025", dateStr);
+	}
+
 }
