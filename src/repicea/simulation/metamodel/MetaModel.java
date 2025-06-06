@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -718,7 +719,7 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 //			jw.write(data);	
 //			jw.close();
 			ObjectMapper om = new ObjectMapper();
-			om.setDateFormat(DateFormat.getDateInstance(DateFormat.FULL));
+			om.setDateFormat(DateFormat.getDateInstance(DateFormat.FULL, Locale.ENGLISH));
 			om.writeValue(os, data);
 		}
 	}
