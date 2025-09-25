@@ -169,5 +169,19 @@ public class MetaModelDeserializationTest {
 		String dateStr = DateFormat.getDateInstance(DateFormat.FULL, Locale.ENGLISH).format(metaData1.fit.timeStamp);
 		Assert.assertEquals("Testing date conversion from French to English", "Friday, April 4, 2025", dateStr);
 	}
+	
+	@Test
+	public void test07XmlFormatWithINFString() throws IOException {
+		String rootPath = "C:" + File.separator +
+				"Users" + File.separator + "matforti" + File.separator +
+				"7_Developpement" + File.separator + "ModellingProjects" + File.separator +
+				"MetaModelSet" + File.separator + "incubator" + File.separator + 
+				"QC" + File.separator + "5EST" + File.separator +
+				"PET3" + File.separator + "Natura2014" + File.separator;
+//		String filename = rootPath + "QC_5EST_MS23_NoChange_AliveStemDensity_AllSpecies.zml";
+		String filename = rootPath + "myUncompressedFile.xml";
+		MetaModel.Load(filename);
+	}
+
 
 }
