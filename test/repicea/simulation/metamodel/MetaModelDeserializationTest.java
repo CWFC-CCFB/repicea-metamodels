@@ -172,14 +172,8 @@ public class MetaModelDeserializationTest {
 	
 	@Test
 	public void test07XmlFormatWithINFString() throws IOException {
-		String rootPath = "C:" + File.separator +
-				"Users" + File.separator + "matforti" + File.separator +
-				"7_Developpement" + File.separator + "ModellingProjects" + File.separator +
-				"MetaModelSet" + File.separator + "incubator" + File.separator + 
-				"QC" + File.separator + "5EST" + File.separator +
-				"PET3" + File.separator + "Natura2014" + File.separator;
-//		String filename = rootPath + "QC_5EST_MS23_NoChange_AliveStemDensity_AllSpecies.zml";
-		String filename = rootPath + "myUncompressedFile.xml";
+		String rootPath = ObjectUtility.getPackagePath(getClass());
+		String filename = rootPath + "QC_5EST_MS23_NoChange_AliveStemDensity_AllSpecies.zml";
 		MetaModel.Load(filename);
 	}
 
