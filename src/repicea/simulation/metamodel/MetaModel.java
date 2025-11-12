@@ -60,7 +60,7 @@ import repicea.util.REpiceaLogManager;
 /**
  * A class that handles the data set and fits the meta-model for a group of strata.
  * 
- * @author Mathieu Fortin - December 2020
+ * @author Mathieu Fortin - December 2020, November 2025
  */
 public class MetaModel implements Saveable, PostUnmarshalling {
 		
@@ -295,33 +295,37 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 		}
 	}
 
-	private AbstractModelImplementation getInnerModel(String outputType, ModelImplEnum modelImplEnum, Map<String, Object>[] startingValues)
+	private AbstractModelImplementation getInnerModel(String outputType, 
+			ModelImplEnum modelImplEnum, 
+			Map<String, Object>[] startingValues,
+			int leftTrim,
+			int rightTrim)
 			throws StatisticalDataException {
 		AbstractModelImplementation model;
 		switch (modelImplEnum) {
 		case ChapmanRichards:
-			model = new ChapmanRichardsModelImplementation(outputType, this, startingValues);
+			model = new ChapmanRichardsModelImplementation(outputType, this, startingValues, leftTrim, rightTrim);
 			break;
 		case ChapmanRichardsWithRandomEffect:
-			model = new ChapmanRichardsModelWithRandomEffectImplementation(outputType, this, startingValues);
+			model = new ChapmanRichardsModelWithRandomEffectImplementation(outputType, this, startingValues, leftTrim, rightTrim);
 			break;
 		case ChapmanRichardsDerivative:
-			model = new ChapmanRichardsDerivativeModelImplementation(outputType, this, startingValues);
+			model = new ChapmanRichardsDerivativeModelImplementation(outputType, this, startingValues, leftTrim, rightTrim);
 			break;
 		case ChapmanRichardsDerivativeWithRandomEffect:
-			model = new ChapmanRichardsDerivativeModelWithRandomEffectImplementation(outputType, this, startingValues);
+			model = new ChapmanRichardsDerivativeModelWithRandomEffectImplementation(outputType, this, startingValues, leftTrim, rightTrim);
 			break;
 		case Exponential:
-			model = new ExponentialModelImplementation(outputType, this, startingValues);
+			model = new ExponentialModelImplementation(outputType, this, startingValues, leftTrim, rightTrim);
 			break;
 		case ExponentialWithRandomEffect:
-			model = new ExponentialModelWithRandomEffectImplementation(outputType, this, startingValues);
+			model = new ExponentialModelWithRandomEffectImplementation(outputType, this, startingValues, leftTrim, rightTrim);
 			break;
 		case ModifiedChapmanRichardsDerivative:
-			model = new ModifiedChapmanRichardsDerivativeModelImplementation(outputType, this, startingValues);
+			model = new ModifiedChapmanRichardsDerivativeModelImplementation(outputType, this, startingValues, leftTrim, rightTrim);
 			break;
 		case ModifiedChapmanRichardsDerivativeWithRandomEffect:
-			model = new ModifiedChapmanRichardsDerivativeModelWithRandomEffectImplementation(outputType, this, startingValues);
+			model = new ModifiedChapmanRichardsDerivativeModelWithRandomEffectImplementation(outputType, this, startingValues, leftTrim, rightTrim);
 			break;
 		default:
 			throw new InvalidParameterException("This ModelImplEnum " + modelImplEnum.name() + " has not been implemented yet!");
@@ -430,7 +434,6 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 		return myImplementations;
 	}
 	
-	
 	/**
 	 * Fit the meta-model.<p>
 	 * 
@@ -441,11 +444,35 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 	 * @see ModelImplEnum
 	 */
 	public String fitModel(String outputType, LinkedHashMap<String, Object> modelImplementations) throws IOException {
+		return fitModel(outputType, modelImplementations, 0, Integer.MAX_VALUE);
+	}
+	
+	/**
+	 * Fit the meta-model.<p>
+	 * 
+	 * @param outputType the output type the model will be fitted to (e.g., volumeAlive_Coniferous)
+	 * @param modelImplementations a Map of List of strings that are the names of the ModelImplEnum constants
+	 * @param leftTrim a minimum age to be considered
+	 * @param rightTrim a maximum age to be considered
+	 * @return a string either DONE or ERROR: [...] if something went wrong
+	 * @throws IOException if an error occurs while parsing the JSON string
+	 * @see ModelImplEnum
+	 */
+	public String fitModel(String outputType, 
+			LinkedHashMap<String, Object> modelImplementations,
+			int leftTrim,
+			int rightTrim) throws IOException {
 		if (outputType == null || !getPossibleOutputTypes().contains(outputType)) {
 			throw new InvalidParameterException("The outputType argument should be one of the possible output type (see the getPossibleOutputTypes() method)!");
 		}
 		if (modelImplementations == null || modelImplementations.isEmpty()) {
 			throw new InvalidParameterException("The modelImplementationStrings argument should be a Map!");
+		}
+		if (leftTrim < 0 || rightTrim < 0) {
+			throw new InvalidParameterException("The leftTrim and rightTrim arguments must be non negative!");
+		}
+		if (rightTrim <= leftTrim) {
+			throw new InvalidParameterException("The rightTrim argument must be larger than the leftTrim one!");
 		}
 		
 		LinkedHashMap<ModelImplEnum, Map<String, Object>[]> formattedModelImplementations = formatModelImplementationMap(modelImplementations);
@@ -458,7 +485,7 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 
 			for (ModelImplEnum e : formattedModelImplementations.keySet()) {
 				Map<String, Object>[] startingValues = formattedModelImplementations.get(e);
-				InnerWorker w = new InnerWorker(getInnerModel(outputType, e, startingValues));
+				InnerWorker w = new InnerWorker(getInnerModel(outputType, e, startingValues, leftTrim, rightTrim));
 				w.start();
 				modelList.add(w);
 			}

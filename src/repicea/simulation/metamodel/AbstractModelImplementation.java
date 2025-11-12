@@ -160,10 +160,12 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 
 	/**
 	 * Internal constructor.
-	 * @param outputType the desired outputType to be modelled
-	 * @param scriptResults a Map containing the ScriptResult instances of the growth simulation
 	 */
-	AbstractModelImplementation(String outputType, MetaModel metaModel, Map<String, Object>[] startingValues) throws StatisticalDataException {
+	AbstractModelImplementation(String outputType, 
+			MetaModel metaModel, 
+			Map<String, Object>[] startingValues,
+			int leftTrim,
+			int rightTrim) throws StatisticalDataException {
 		Map<Integer, ScriptResult> scriptResults = metaModel.scriptResults;
 		String stratumGroup = metaModel.getStratumGroup();
 		if (stratumGroup == null) {
@@ -176,7 +178,7 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 			throw new InvalidParameterException("The outputType " + outputType + " is not part of the dataset!");
 		}
 		this.stratumGroup = stratumGroup;
-		HierarchicalStatisticalDataStructure structure = getDataStructureReady(outputType, scriptResults);
+		HierarchicalStatisticalDataStructure structure = getDataStructureReady(outputType, scriptResults, leftTrim, rightTrim);
 		isVarianceErrorTermAvailable = metaModel.isVarianceAvailable() && !AbstractModelImplementation.EstimateResidualVariance;
 		Matrix varCov = getVarCovReady(outputType, scriptResults);
 
@@ -310,7 +312,10 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	 * @param scriptResults a Map containing the ScriptResult instances of the growth simulation
 	 * @throws StatisticalDataException
 	 */
-	private HierarchicalStatisticalDataStructure getDataStructureReady(String outputType, Map<Integer, ScriptResult> scriptResults) throws StatisticalDataException {
+	private HierarchicalStatisticalDataStructure getDataStructureReady(String outputType, 
+			Map<Integer, ScriptResult> scriptResults,
+			int leftTrim,
+			int rightTrim) throws StatisticalDataException {
 		finalDataSet = null;
 		for (int initAgeYr : scriptResults.keySet()) {
 			ScriptResult r = scriptResults.get(initAgeYr);
@@ -322,15 +327,22 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 				finalDataSet = new DataSet(fieldNames);
 			}
 			int outputTypeFieldNameIndex = finalDataSet.getFieldNames().indexOf(ScriptResult.OutputTypeFieldName);
+			int ageYrFieldNameIndex = finalDataSet.getFieldNames().indexOf(ScriptResult.TimeSinceInitialDateYrFieldName);
 			for (Observation obs : dataSet.getObservations()) {
 				List<Object> newObs = new ArrayList<Object>();
 				Object[] obsArray = obs.toArray();
 				if (obsArray[outputTypeFieldNameIndex].equals(outputType)) {
-					newObs.addAll(Arrays.asList(obsArray));
-					newObs.add(initAgeYr);	// adding the initial age to the data set
-					finalDataSet.addObservation(newObs.toArray());
+					int ageYr = Integer.parseInt(obsArray[ageYrFieldNameIndex].toString()) + initAgeYr;
+					if (ageYr >= leftTrim && ageYr <= rightTrim) {
+						newObs.addAll(Arrays.asList(obsArray));
+						newObs.add(initAgeYr);	// adding the initial age to the data set
+						finalDataSet.addObservation(newObs.toArray());
+					}
 				}
 			}
+		}
+		if (finalDataSet.getNumberOfObservations() < 5) {
+			throw new UnsupportedOperationException("The dataset is too small to fit the meta-model!");
 		}
 		finalDataSet.indexFieldType();
 		HierarchicalStatisticalDataStructure dataStruct = new GenericHierarchicalStatisticalDataStructure(finalDataSet, false);	// no sorting
