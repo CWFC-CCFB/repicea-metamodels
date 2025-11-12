@@ -36,8 +36,12 @@ import repicea.stats.data.StatisticalDataException;
  */
 class ExponentialModelImplementation extends AbstractModelImplementation {
 
-	protected ExponentialModelImplementation(String outputType, MetaModel model, Map<String, Object>[] startingValues) throws StatisticalDataException {
-		super(outputType, model, startingValues);
+	protected ExponentialModelImplementation(String outputType, 
+			MetaModel model, 
+			Map<String, Object>[] startingValues,
+			int leftTrim,
+			int rightTrim) throws StatisticalDataException {
+		super(outputType, model, startingValues, leftTrim, rightTrim);
 	}
 
 	@Override

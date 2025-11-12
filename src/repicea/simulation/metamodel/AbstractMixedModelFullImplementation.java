@@ -39,13 +39,13 @@ abstract class AbstractMixedModelFullImplementation extends AbstractModelImpleme
 	
 	protected static final String RANDOM_EFFECT_STD = "sigma_u";
 	
-//	int indexRandomEffectStandardDeviation;
-//	int indexFirstRandomEffect;
-	
 	GaussianDistribution randomEffectDistribution;
 	
-	AbstractMixedModelFullImplementation(String outputType, MetaModel metaModel, Map<String, Object>[] startingValues) throws StatisticalDataException {
-		super(outputType, metaModel, startingValues);
+	AbstractMixedModelFullImplementation(String outputType, MetaModel metaModel, 
+			Map<String, Object>[] startingValues,
+			int leftTrim,
+			int rightTrim) throws StatisticalDataException {
+		super(outputType, metaModel, startingValues, leftTrim, rightTrim);
 	}
 
 	@Override

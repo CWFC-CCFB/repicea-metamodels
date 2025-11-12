@@ -37,8 +37,12 @@ import repicea.stats.data.StatisticalDataException;
  */
 class ModifiedChapmanRichardsDerivativeModelWithRandomEffectImplementation	extends AbstractMixedModelFullImplementation {
 
-	ModifiedChapmanRichardsDerivativeModelWithRandomEffectImplementation(String outputType, MetaModel model, Map<String, Object>[] startingValues) throws StatisticalDataException {
-		super(outputType, model, startingValues);
+	ModifiedChapmanRichardsDerivativeModelWithRandomEffectImplementation(String outputType, 
+			MetaModel model, 
+			Map<String, Object>[] startingValues,
+			int leftTrim, 
+			int rightTrim) throws StatisticalDataException {
+		super(outputType, model, startingValues, leftTrim, rightTrim);
 	}
 	
 

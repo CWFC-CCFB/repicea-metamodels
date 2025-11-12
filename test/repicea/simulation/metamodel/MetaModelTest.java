@@ -181,7 +181,11 @@ public class MetaModelTest {
 				
 		MetaModelInstance.fitModel("AliveVolume_AllSpecies", startingValuesMap);
 		Assert.assertEquals("Testing final sample size", 400, MetaModelInstance.model.mh.convertMetropolisHastingsSampleToDataSet().getNumberOfObservations());
+		
+		DataSet ds = MetaModelInstance.getFinalDataSet();
+		Assert.assertEquals("Testing final dataset size", 60, ds.getNumberOfObservations());
 	}
+
 
 	@SuppressWarnings("unchecked")
 	@Test
@@ -434,6 +438,40 @@ public class MetaModelTest {
 		System.out.println(summary);
 	}
 
+	/**
+	 * Test whether the JSON string can be properly deserialized.<p>
+	 * The test will throw an exception if the JSON string cannot be deserialized.
+	 * @throws MetaModelException 
+	 */
+	@SuppressWarnings("unchecked")
+	@Test
+	public void test18trimmingDatsetPriorToModelFitting() throws Exception {
+		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[4];
+		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "710", "Uniform", new String[] {"0", "2000"}});
+		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.008", "Uniform", new String[] {"0.00001", "0.05"}});
+		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "1.4", "Uniform", new String[] {"0.8", "6"}});
+		parms[3] = MetaModel.convertParameters(new Object[] {"rho", "0.99", "Uniform", new String[] {"0.8", "0.995"}});
+
+//		Map<String, Object> args = new HashMap<String, Object>();
+//		args.put(JsonWriter.TYPE, false);
+//		String jsonStr = JsonWriter.objectToJson(parms, args);
+//		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+		ObjectMapper om = new ObjectMapper();
+		String jsonStr = om.writeValueAsString(parms);
+		
+		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
+		startingValuesMap.put(ModelImplEnum.ChapmanRichardsDerivative.name(), jsonStr);
+		System.out.println(MetaModelInstance.getPossibleOutputTypes());
+				
+		MetaModelInstance.fitModel("AliveVolume_AllSpecies", startingValuesMap, 50, 300); // remove observations that are less than 50 years of age
+		Assert.assertEquals("Testing final sample size", 400, MetaModelInstance.model.mh.convertMetropolisHastingsSampleToDataSet().getNumberOfObservations());
+		
+		DataSet ds = MetaModelInstance.getFinalDataSet();
+		Assert.assertEquals("Testing final dataset size", 58, ds.getNumberOfObservations());
+	}
+
+	
+	
 	public static void main(String[] args) throws IOException, MetaModelException {
 		String path = ObjectUtility.getPackagePath(MetaModelTest.class);
 		String metaModelFilename = path + "metaModelRS38Test.zml";

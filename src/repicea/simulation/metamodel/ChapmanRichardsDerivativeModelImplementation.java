@@ -36,8 +36,12 @@ import repicea.stats.data.StatisticalDataException;
  */
 class ChapmanRichardsDerivativeModelImplementation extends AbstractModelImplementation {
 
-	protected ChapmanRichardsDerivativeModelImplementation(String outputType, MetaModel model, Map<String, Object>[] startingValues) throws StatisticalDataException {
-		super(outputType, model, startingValues);
+	protected ChapmanRichardsDerivativeModelImplementation(String outputType, 
+			MetaModel model, 
+			Map<String, Object>[] startingValues,
+			int leftTrim,
+			int rightTrim) throws StatisticalDataException {
+		super(outputType, model, startingValues, leftTrim, rightTrim);
 	}
 
 	@Override
