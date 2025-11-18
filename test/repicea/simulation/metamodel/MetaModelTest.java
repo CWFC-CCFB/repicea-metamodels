@@ -470,13 +470,77 @@ public class MetaModelTest {
 		Assert.assertEquals("Testing final dataset size", 58, ds.getNumberOfObservations());
 	}
 
+	@SuppressWarnings("unchecked")
+	@Test
+	public void test19ResLagForStemDensity() throws Exception {
+		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_3EST_MJ22_NoChange.zml";
+		MetaModel m = MetaModel.Load(filename);
+		m.getMetropolisHastingsParameters().nbBurnIn = 1000;
+		m.getMetropolisHastingsParameters().nbAcceptedRealizations = 2000;
+		m.getMetropolisHastingsParameters().nbInitialGrid = 0;
+		m.getMetropolisHastingsParameters().oneEach = 25;
+
+		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
+		
+		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[4];
+		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "5000", "Uniform", new String[] {"0", "10000"}});
+		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.005", "Uniform", new String[] {"0.0001", "0.01"}});
+		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "0.2", "Uniform", new String[] {"0.001", "0.5"}});
+		parms[3] = MetaModel.convertParameters(new Object[] {AbstractModelImplementation.CORRELATION_PARM, "0.92", "Uniform", new String[] {"0.8", "0.995"}});
+
+//		Map<String, Object> args = new HashMap<String, Object>();
+//		args.put(JsonWriter.TYPE, false);
+//		String jsonStr = JsonWriter.objectToJson(parms, args);
+//		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+		ObjectMapper om = new ObjectMapper();
+		String jsonStr = om.writeValueAsString(parms);
 	
+		
+		startingValuesMap.put(ModelImplEnum.ModifiedChapmanRichardsDerivative.name(), jsonStr);
+		
+		m.fitModel("AliveStemDensity_AllSpecies", startingValuesMap);
+		Assert.assertTrue("Check if regeneration lag was enabled", m.model.isRegenerationLagEvaluationNeeded);
+	}
+
+	
+	@SuppressWarnings("unchecked")
+	@Test
+	public void test20ResLagForDominantHeight() throws Exception {
+		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_3EST_MJ22_NoChange.zml";
+		MetaModel m = MetaModel.Load(filename);
+		m.getMetropolisHastingsParameters().nbBurnIn = 1000;
+		m.getMetropolisHastingsParameters().nbAcceptedRealizations = 2000;
+		m.getMetropolisHastingsParameters().nbInitialGrid = 0;
+		m.getMetropolisHastingsParameters().oneEach = 25;
+
+		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
+		
+		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[4];
+		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "30", "Uniform", new String[] {"0", "80"}});
+		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.02", "Uniform", new String[] {"0.0001", "0.3"}});
+		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "2", "Uniform", new String[] {"0.8", "6"}});
+		parms[3] = MetaModel.convertParameters(new Object[] {AbstractModelImplementation.CORRELATION_PARM, "0.95", "Uniform", new String[] {"0.8", "0.995"}});
+
+//		Map<String, Object> args = new HashMap<String, Object>();
+//		args.put(JsonWriter.TYPE, false);
+//		String jsonStr = JsonWriter.objectToJson(parms, args);
+//		String jsonStr = JsonIo.toJson(parms, new WriteOptionsBuilder().showTypeInfoNever().build());
+		ObjectMapper om = new ObjectMapper();
+		String jsonStr = om.writeValueAsString(parms);
+	
+		
+		startingValuesMap.put(ModelImplEnum.ChapmanRichards.name(), jsonStr);
+		
+		m.fitModel("AliveDominantHeight_ALL", startingValuesMap, 30, 1000);
+		Assert.assertTrue("Check if regeneration lag was enabled", m.model.isRegenerationLagEvaluationNeeded);
+	}
+
 	
 	public static void main(String[] args) throws IOException, MetaModelException {
 		String path = ObjectUtility.getPackagePath(MetaModelTest.class);
 		String metaModelFilename = path + "metaModelRS38Test.zml";
-		MetaModel mmBase = MetaModel.Load(metaModelFilename);
-		String summaryBase = mmBase.getSummary();
+//		MetaModel mmBase = MetaModel.Load(metaModelFilename);
+//		String summaryBase = mmBase.getSummary();
 		MetaModel.convertToLightVersion(metaModelFilename);
 		MetaModel metaModel = MetaModel.Load(MetaModel.getLightVersionFilename(metaModelFilename));
 		String summary = metaModel.getSummary();

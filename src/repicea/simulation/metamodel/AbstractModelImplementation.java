@@ -1,7 +1,7 @@
 /*
  * This file is part of the repicea-metamodels library.
  *
- * Copyright (C) 2021-24 His Majesty the King in Right of Canada
+ * Copyright (C) 2021-25 His Majesty the King in Right of Canada
  * Author: Mathieu Fortin, Canadian Forest Service
  *
  * This library is free software; you can redistribute it and/or
@@ -77,12 +77,13 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		final int nbPlots;
 
 		DataBlockWrapper(String blockId, 
+				int initialAgeYr,
 				List<Integer> indices, 
 				Matrix vectorY,
 				Matrix matrixX,
 				Matrix overallVarCov,
 				int nbPlots) {
-			super(blockId, indices, vectorY, matrixX, overallVarCov);
+			super(blockId, initialAgeYr, indices, vectorY, matrixX, overallVarCov);
 			if (AbstractModelImplementation.this.isVarianceErrorTermAvailable) { 
 				Matrix varCovTmp = overallVarCov.getSubMatrix(indices, indices);
 				Matrix stdDiag = correctVarCov(varCovTmp).diagonalVector().elementWisePower(0.5);
@@ -200,9 +201,9 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		for (String k : formattedMap.keySet()) {
 			DataBlock db = formattedMap.get(k);
 			List<Integer> indices = db.getIndices();
-			int age = Integer.parseInt(k.substring(0, k.indexOf("_")));
-			int nbPlots = scriptResults.get(age).getNbPlots();
-			AbstractDataBlockWrapper bw = createWrapper(k, indices, vectorY, matrixX, varCov, nbPlots);
+			int initialAgeYr = Integer.parseInt(k.substring(0, k.indexOf("_")));
+			int nbPlots = scriptResults.get(initialAgeYr).getNbPlots();
+			AbstractDataBlockWrapper bw = createWrapper(k, initialAgeYr, indices, vectorY, matrixX, varCov, nbPlots);
 			dataBlockWrappers.add(bw);
 			if (bw.getInitialAgeYr() < minimumStratumAgeYr) {
 				minimumStratumAgeYr = bw.getInitialAgeYr();
@@ -224,13 +225,14 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 	abstract LinkedHashMap<String, Object>[] getDefaultParameters();
 	abstract List<String> getParameterNames();
 
-	protected final AbstractDataBlockWrapper createWrapper(String k, 
+	protected final AbstractDataBlockWrapper createWrapper(String k,
+			int initialAgeYr,
 			List<Integer> indices, 
 			Matrix vectorY, 
 			Matrix matrixX, 
 			Matrix varCov, 
 			int nbPlots) {
-		return new DataBlockWrapper(k, indices, vectorY, matrixX, varCov, nbPlots);
+		return new DataBlockWrapper(k, initialAgeYr, indices, vectorY, matrixX, varCov, nbPlots);
 	}
 	
 	private Matrix generatePredictions(AbstractDataBlockWrapper dbw, double randomEffect, boolean includePredVariance) {

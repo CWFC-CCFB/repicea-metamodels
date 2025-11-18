@@ -44,13 +44,16 @@ abstract class AbstractDataBlockWrapper extends AbstractMathematicalFunction {
 	final GaussHermiteQuadrature ghq;
 	final List<Integer> ghqIndices;
 	final List<Integer> indices;
+	final int initialAgeYr;
 	
 	AbstractDataBlockWrapper(String blockId, 
+			int initialAgeYr,
 			List<Integer> indices,
 			Matrix vectorY,
 			Matrix matrixX,
 			Matrix overallVarCov) {
 		this.blockId = blockId;
+		this.initialAgeYr = initialAgeYr;
 		this.indices = indices;
 		Matrix matX = matrixX.getSubMatrix(indices, null);
 		this.vecY = vectorY.getSubMatrix(indices, null);
@@ -64,10 +67,14 @@ abstract class AbstractDataBlockWrapper extends AbstractMathematicalFunction {
 	}
 	
 	/**
-	 * Provide the initial age of the stratum.
+	 * Provide the initial age of the stratum.<p>
+	 * This is the age of the stratum at time 0.
 	 * @return the age (yr)
 	 */
-	final int getInitialAgeYr() {return ((Number) ageYr.getValueAt(0, 0)).intValue();}
+	final int getInitialAgeYr() {
+		return initialAgeYr;
+	//	return ((Number) ageYr.getValueAt(0, 0)).intValue();
+	}
 	
 	/**
 	 * Ensure null variances are set to 0.0001
