@@ -139,6 +139,8 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		EnumMap.put(ExponentialModelWithRandomEffectImplementation.class, ModelImplEnum.ExponentialWithRandomEffect);
 		EnumMap.put(ModifiedChapmanRichardsDerivativeModelImplementation.class, ModelImplEnum.ModifiedChapmanRichardsDerivative);
 		EnumMap.put(ModifiedChapmanRichardsDerivativeModelWithRandomEffectImplementation.class, ModelImplEnum.ModifiedChapmanRichardsDerivativeWithRandomEffect);
+		EnumMap.put(ModifiedChapmanRichardsFourParameterDerivativeModelImplementation.class, ModelImplEnum.ModifiedChapmanRichardsFourParameterDerivative);
+		EnumMap.put(ModifiedChapmanRichardsFourParameterDerivativeModelWithRandomEffectImplementation.class, ModelImplEnum.ModifiedChapmanRichardsFourParameterDerivativeWithRandomEffect);
 	}
 	
 	static boolean EstimateResidualVariance = false;  

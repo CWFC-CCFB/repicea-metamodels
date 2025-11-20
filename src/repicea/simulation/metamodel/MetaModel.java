@@ -171,7 +171,9 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 		Exponential,
 		ExponentialWithRandomEffect,
 		ModifiedChapmanRichardsDerivative,
-		ModifiedChapmanRichardsDerivativeWithRandomEffect;
+		ModifiedChapmanRichardsDerivativeWithRandomEffect,
+		ModifiedChapmanRichardsFourParameterDerivative,
+		ModifiedChapmanRichardsFourParameterDerivativeWithRandomEffect;
 	}
 
 	public enum PredictionVarianceOutputType {
@@ -326,6 +328,12 @@ public class MetaModel implements Saveable, PostUnmarshalling {
 			break;
 		case ModifiedChapmanRichardsDerivativeWithRandomEffect:
 			model = new ModifiedChapmanRichardsDerivativeModelWithRandomEffectImplementation(outputType, this, startingValues, leftTrim, rightTrim);
+			break;
+		case ModifiedChapmanRichardsFourParameterDerivative:
+			model = new ModifiedChapmanRichardsFourParameterDerivativeModelImplementation(outputType, this, startingValues, leftTrim, rightTrim);
+			break;
+		case ModifiedChapmanRichardsFourParameterDerivativeWithRandomEffect:
+			model = new ModifiedChapmanRichardsFourParameterDerivativeModelWithRandomEffectImplementation(outputType, this, startingValues, leftTrim, rightTrim);
 			break;
 		default:
 			throw new InvalidParameterException("This ModelImplEnum " + modelImplEnum.name() + " has not been implemented yet!");
