@@ -541,7 +541,7 @@ public class MetaModelTest {
 		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_2EST_MJ22_NoChange.zml";
 		MetaModel m = MetaModel.Load(filename);
 		m.getMetropolisHastingsParameters().nbBurnIn = 5000;
-		m.getMetropolisHastingsParameters().nbAcceptedRealizations = 15000;
+		m.getMetropolisHastingsParameters().nbAcceptedRealizations = 55000;
 		m.getMetropolisHastingsParameters().nbInitialGrid = 10000;
 		m.getMetropolisHastingsParameters().oneEach = 25;
 
