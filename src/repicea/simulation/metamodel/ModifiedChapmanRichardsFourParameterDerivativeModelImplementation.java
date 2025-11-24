@@ -72,7 +72,7 @@ class ModifiedChapmanRichardsFourParameterDerivativeModelImplementation extends 
 		double b1 = parms.getValueAt(0, 0);
 		double b2 = parms.getValueAt(1, 0);
 		double b3 = parms.getValueAt(2, 0);
-		double b4 = parms.getValueAt(2, 0);
+		double b4 = parms.getValueAt(3, 0);
 		
 		double exp1 = Math.exp(-b2 * ageYr);
 		double exp2 = Math.exp(-b3 * ageYr);
