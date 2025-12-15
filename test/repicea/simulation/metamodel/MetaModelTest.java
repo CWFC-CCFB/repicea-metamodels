@@ -463,7 +463,7 @@ public class MetaModelTest {
 		startingValuesMap.put(ModelImplEnum.ChapmanRichardsDerivative.name(), jsonStr);
 		System.out.println(MetaModelInstance.getPossibleOutputTypes());
 				
-		MetaModelInstance.fitModel("AliveVolume_AllSpecies", startingValuesMap, 50, 300); // remove observations that are less than 50 years of age
+		MetaModelInstance.fitModel("AliveVolume_AllSpecies", startingValuesMap, 50, 300, false); // remove observations that are less than 50 years of age
 		Assert.assertEquals("Testing final sample size", 400, MetaModelInstance.model.mh.convertMetropolisHastingsSampleToDataSet().getNumberOfObservations());
 		
 		DataSet ds = MetaModelInstance.getFinalDataSet();
@@ -531,7 +531,7 @@ public class MetaModelTest {
 		
 		startingValuesMap.put(ModelImplEnum.ChapmanRichards.name(), jsonStr);
 		
-		m.fitModel("AliveDominantHeight_ALL", startingValuesMap, 30, 1000);
+		m.fitModel("AliveDominantHeight_ALL", startingValuesMap, 30, 1000, false);
 		Assert.assertTrue("Check if regeneration lag was enabled", m.model.isRegenerationLagEvaluationNeeded);
 	}
 
@@ -580,6 +580,65 @@ public class MetaModelTest {
 		Assert.assertTrue("Testing the selection of the best model.", m.getSummary().contains("ModifiedChapmanRichardsFourParameterDerivativeModelImplementation"));
 		double b1 = m.getFinalParameterEstimates().getValueAt(0, 0);
 		Assert.assertEquals("Testing parameter b1", 1300, b1, 250);
+	}
+
+	@Test
+	public void test22MetaModelsForceResidualVarianceButMissingParm() throws IOException {
+		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_5EST_MS20_NoChange.zml";
+		MetaModel m = MetaModel.Load(filename);
+		m.getMetropolisHastingsParameters().nbBurnIn = 10000;
+		m.getMetropolisHastingsParameters().nbAcceptedRealizations = 60000;
+		m.getMetropolisHastingsParameters().nbInitialGrid = 0;
+		m.getMetropolisHastingsParameters().oneEach = 25;
+
+		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
+		
+		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[5];
+		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "2000", "Uniform", new String[] {"500", "6000"}});
+		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.005", "Uniform", new String[] {"0.0001", "0.01"}});
+		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "0.1", "Uniform", new String[] {"0.001", "0.5"}});
+		parms[3] = MetaModel.convertParameters(new Object[] {"b4", "1", "Uniform", new String[] {"0.8", "6"}});
+		parms[4] = MetaModel.convertParameters(new Object[] {AbstractModelImplementation.CORRELATION_PARM, "0.95", "Uniform", new String[] {"0.8", "0.995"}});
+
+		ObjectMapper om = new ObjectMapper();
+		String jsonStr = om.writeValueAsString(parms);
+		startingValuesMap.put(ModelImplEnum.ModifiedChapmanRichardsFourParameterDerivative.name(), jsonStr);
+	
+		String output = m.fitModel("AliveStemDensity_AllSpecies", startingValuesMap, true);
+		System.out.println("Relax... This exception was expected!");
+		Assert.assertTrue("Check if an exception has occurred.", output.startsWith("ERROR"));
+	}
+
+	@Test
+	public void test23MetaModelsWithForceResidualVariance() throws IOException {
+		String filename = ObjectUtility.getPackagePath(getClass()) + "QC_5EST_MS20_NoChange.zml";
+		MetaModel m = MetaModel.Load(filename);
+		m.getMetropolisHastingsParameters().nbBurnIn = 10000;
+		m.getMetropolisHastingsParameters().nbAcceptedRealizations = 60000;
+		m.getMetropolisHastingsParameters().nbInitialGrid = 10000;
+		m.getMetropolisHastingsParameters().oneEach = 25;
+
+		LinkedHashMap<String, Object> startingValuesMap = new LinkedHashMap<String, Object>();
+		
+		LinkedHashMap<String, Object>[] parms = new LinkedHashMap[6];
+		parms[0] = MetaModel.convertParameters(new Object[] {"b1", "2000", "Uniform", new String[] {"500", "6000"}});
+		parms[1] = MetaModel.convertParameters(new Object[] {"b2", "0.005", "Uniform", new String[] {"0.0001", "0.01"}});
+		parms[2] = MetaModel.convertParameters(new Object[] {"b3", "0.1", "Uniform", new String[] {"0.001", "0.5"}});
+		parms[3] = MetaModel.convertParameters(new Object[] {"b4", "1", "Uniform", new String[] {"0.8", "6"}});
+		parms[4] = MetaModel.convertParameters(new Object[] {AbstractModelImplementation.CORRELATION_PARM, "0.95", "Uniform", new String[] {"0.8", "0.995"}});
+		parms[5] = MetaModel.convertParameters(new Object[] {AbstractModelImplementation.RESIDUAL_VARIANCE, "20000", "Uniform", new String[] {"0", "150000"}});
+
+		ObjectMapper om = new ObjectMapper();
+		String jsonStr = om.writeValueAsString(parms);
+		startingValuesMap.put(ModelImplEnum.ModifiedChapmanRichardsFourParameterDerivative.name(), jsonStr);
+	
+		String output = m.fitModel("AliveStemDensity_AllSpecies", startingValuesMap, true);
+		Assert.assertTrue("Check if the model converged.", output.startsWith("DONE"));
+		Assert.assertTrue("Check if regeneration lag was enabled", m.model.isRegenerationLagEvaluationNeeded);
+		System.out.println(m.getModelComparison());
+		System.out.println(m.getSummary());
+		double b1 = m.getFinalParameterEstimates().getValueAt(0, 0);
+		Assert.assertEquals("Testing parameter b1", 2100, b1, 250);
 	}
 
 	

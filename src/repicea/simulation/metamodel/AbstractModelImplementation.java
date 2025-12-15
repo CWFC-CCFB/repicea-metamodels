@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 import repicea.math.Matrix;
 import repicea.math.SymmetricMatrix;
@@ -47,6 +48,7 @@ import repicea.stats.estimators.mcmc.MetropolisHastingsAlgorithm;
 import repicea.stats.estimators.mcmc.MetropolisHastingsCompatibleModel;
 import repicea.stats.estimators.mcmc.MetropolisHastingsPriorHandler;
 import repicea.stats.model.StatisticalModel;
+import repicea.util.REpiceaLogManager;
 
 /**
  * A package class to handle the different types of meta-models (e.g. Chapman-Richards and others).
@@ -143,7 +145,7 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 		EnumMap.put(ModifiedChapmanRichardsFourParameterDerivativeModelWithRandomEffectImplementation.class, ModelImplEnum.ModifiedChapmanRichardsFourParameterDerivativeWithRandomEffect);
 	}
 	
-	static boolean EstimateResidualVariance = false;  
+//	static boolean EstimateResidualVariance = false;  
 	
 	protected final List<AbstractDataBlockWrapper> dataBlockWrappers;
 	protected final String outputType;
@@ -168,7 +170,8 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 			MetaModel metaModel, 
 			Map<String, Object>[] startingValues,
 			int leftTrim,
-			int rightTrim) throws StatisticalDataException {
+			int rightTrim,
+			boolean forceResidualVarianceEstimation) throws StatisticalDataException {
 		Map<Integer, ScriptResult> scriptResults = metaModel.scriptResults;
 		String stratumGroup = metaModel.getStratumGroup();
 		if (stratumGroup == null) {
@@ -181,8 +184,8 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 			throw new InvalidParameterException("The outputType " + outputType + " is not part of the dataset!");
 		}
 		this.stratumGroup = stratumGroup;
+		isVarianceErrorTermAvailable = metaModel.isVarianceAvailable() && !forceResidualVarianceEstimation;
 		HierarchicalStatisticalDataStructure structure = getDataStructureReady(outputType, scriptResults, leftTrim, rightTrim);
-		isVarianceErrorTermAvailable = metaModel.isVarianceAvailable() && !AbstractModelImplementation.EstimateResidualVariance;
 		Matrix varCov = getVarCovReady(outputType, scriptResults);
 
 		this.outputType = outputType;
@@ -332,15 +335,20 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 			}
 			int outputTypeFieldNameIndex = finalDataSet.getFieldNames().indexOf(ScriptResult.OutputTypeFieldName);
 			int ageYrFieldNameIndex = finalDataSet.getFieldNames().indexOf(ScriptResult.TimeSinceInitialDateYrFieldName);
+			int varianceIndex = finalDataSet.getFieldNames().indexOf(ScriptResult.TotalVarianceFieldName);
 			for (Observation obs : dataSet.getObservations()) {
 				List<Object> newObs = new ArrayList<Object>();
 				Object[] obsArray = obs.toArray();
 				if (obsArray[outputTypeFieldNameIndex].equals(outputType)) {
 					int ageYr = Integer.parseInt(obsArray[ageYrFieldNameIndex].toString()) + initAgeYr;
 					if (ageYr >= leftTrim && ageYr <= rightTrim) {
-						newObs.addAll(Arrays.asList(obsArray));
-						newObs.add(initAgeYr);	// adding the initial age to the data set
-						finalDataSet.addObservation(newObs.toArray());
+						if (isVarianceErrorTermAvailable && Double.parseDouble(obsArray[varianceIndex].toString()) == 0d) {
+							REpiceaLogManager.logMessage(MetaModelManager.LoggerName, Level.WARNING, "AbstractModelImplementation: ", "An observation is omitted due to a null variance.");
+						} else {
+							newObs.addAll(Arrays.asList(obsArray));
+							newObs.add(initAgeYr);	// adding the initial age to the data set
+							finalDataSet.addObservation(newObs.toArray());
+						}
 					}
 				}
 			}
