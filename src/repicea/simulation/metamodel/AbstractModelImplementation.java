@@ -342,13 +342,9 @@ abstract class AbstractModelImplementation implements StatisticalModel, Metropol
 				if (obsArray[outputTypeFieldNameIndex].equals(outputType)) {
 					int ageYr = Integer.parseInt(obsArray[ageYrFieldNameIndex].toString()) + initAgeYr;
 					if (ageYr >= leftTrim && ageYr <= rightTrim) {
-						if (isVarianceErrorTermAvailable && Double.parseDouble(obsArray[varianceIndex].toString()) == 0d) {
-							REpiceaLogManager.logMessage(MetaModelManager.LoggerName, Level.WARNING, "AbstractModelImplementation: ", "An observation is omitted due to a null variance.");
-						} else {
-							newObs.addAll(Arrays.asList(obsArray));
-							newObs.add(initAgeYr);	// adding the initial age to the data set
-							finalDataSet.addObservation(newObs.toArray());
-						}
+						newObs.addAll(Arrays.asList(obsArray));
+						newObs.add(initAgeYr);	// adding the initial age to the data set
+						finalDataSet.addObservation(newObs.toArray());
 					}
 				}
 			}

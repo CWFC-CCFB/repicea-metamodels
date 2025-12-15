@@ -95,7 +95,7 @@ configurations {
 // make sure to set the compliance to Java 1.8 in the project properties if the Java version is later than 1.8
 // make sure to set Java Compiler > Errors Warnings > Deprecated and Restricted API > Forbidden reference to WARNING instead of ERROR
 dependencies {
-    implementation group: 'io.github.cwfc-ccfb', name: 'repicea', version: '[1.17.0,)'    
+    implementation group: 'io.github.cwfc-ccfb', name: 'repicea', version: '[1.17.2,)'    
     implementation group: 'io.github.cwfc-ccfb', name: 'repicea-mathstats', version: '[1.8.1,)'    
     implementation group: 'io.github.cwfc-ccfb', name: 'repicea-simulation', version: '[1.3.17,)'    
     

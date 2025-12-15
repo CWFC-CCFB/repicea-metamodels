@@ -369,6 +369,11 @@ public class MetaModelTest {
 		String path = ObjectUtility.getPackagePath(MetaModelTest.class);
 		String metaModelFilename = path + "QC_3EST_RS38" + "_NoChange.zml";
 		MetaModel metaModel = MetaModel.Load(metaModelFilename);
+		metaModel.mhSimParms.nbInitialGrid = 0;
+		metaModel.mhSimParms.nbBurnIn = 10000;
+		metaModel.mhSimParms.nbAcceptedRealizations = 100000 + metaModel.mhSimParms.nbBurnIn;
+		metaModel.mhSimParms.oneEach = 50;
+
 		LinkedHashMap<String, Object> implementations = new LinkedHashMap<String, Object>();
 		implementations.put(ModelImplEnum.ChapmanRichards.name(), null);
 		implementations.put(ModelImplEnum.ChapmanRichardsWithRandomEffect.name(), null);
