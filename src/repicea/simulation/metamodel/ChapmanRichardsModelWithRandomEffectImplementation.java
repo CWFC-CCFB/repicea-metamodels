@@ -40,8 +40,9 @@ class ChapmanRichardsModelWithRandomEffectImplementation extends AbstractMixedMo
 			MetaModel model, 
 			Map<String, Object>[] startingValues,
 			int leftTrim,
-			int rightTrim) throws StatisticalDataException {
-		super(outputType, model, startingValues, leftTrim, rightTrim);
+			int rightTrim,
+			boolean forceResidualVarianceEstimation) throws StatisticalDataException {
+		super(outputType, model, startingValues, leftTrim, rightTrim, forceResidualVarianceEstimation);
 	}
 
 

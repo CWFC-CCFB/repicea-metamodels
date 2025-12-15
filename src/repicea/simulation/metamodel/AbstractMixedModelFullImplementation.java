@@ -44,8 +44,9 @@ abstract class AbstractMixedModelFullImplementation extends AbstractModelImpleme
 	AbstractMixedModelFullImplementation(String outputType, MetaModel metaModel, 
 			Map<String, Object>[] startingValues,
 			int leftTrim,
-			int rightTrim) throws StatisticalDataException {
-		super(outputType, metaModel, startingValues, leftTrim, rightTrim);
+			int rightTrim,
+			boolean forceResidualVarianceEstimation) throws StatisticalDataException {
+		super(outputType, metaModel, startingValues, leftTrim, rightTrim, forceResidualVarianceEstimation);
 	}
 
 	@Override
