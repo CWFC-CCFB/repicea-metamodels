@@ -205,17 +205,21 @@ public class MetaModelMetaData {
 			List<String> values = (List) upscalingMap.get("@items");
 			for (int i = 0; i < keys.size(); i++) {
 				int k = (Integer) ((LinkedHashMap) keys.get(i)).get("value");
-				outputMap.put(k, values.get(i));
+				outputMap.put(k, values.get(i) == null ? NO_VARIANCE_UPSCALING : values.get(i));
 			}
 			return outputMap;
 		} else {
 			for (Object k : upscalingMap.keySet()) {
-				outputMap.put(Integer.parseInt(k.toString()), upscalingMap.get(k).toString());
+				int key = Integer.parseInt(k.toString());
+				Object v = upscalingMap.get(k);
+				String value = v == null ? NO_VARIANCE_UPSCALING : v.toString();
+				outputMap.put(key, value);
 			}
 			return outputMap;
 		}
 	}
 
+	static final String NO_VARIANCE_UPSCALING = "No variance upscaling";
 	
 	@SuppressWarnings( "rawtypes" )
 	private static LinkedHashMap<Integer, Integer> parseNbPlots(LinkedHashMap nbPlotsMap, boolean formerJSONIOImplementation) {
