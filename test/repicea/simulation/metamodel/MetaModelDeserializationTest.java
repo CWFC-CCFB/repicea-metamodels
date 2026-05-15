@@ -177,5 +177,18 @@ public class MetaModelDeserializationTest {
 		MetaModel.Load(filename);
 	}
 
+	@Test
+	public void test08MetaModelMetaDataWithNullUpscalingValues() {
+		String metaDataFile = ObjectUtility.getPackagePath(getClass()) + "QC_6_MS22-PT_NoChange_AliveBasalArea_AllSpecies.json"; 
+		MetaModelMetaData metaData1 = MetaModelMetaData.deserializeFromJSONFile(metaDataFile);
+		Assert.assertTrue("Testing if upscaling is set to unknown", metaData1.growth.upscaling.values().iterator().next().equals(MetaModelMetaData.NO_VARIANCE_UPSCALING));
+	}
+
+	@Test
+	public void test09MetaModelMetaDataWithNullUpscalingValuesFormerImplementation() {
+		String metaDataFile = ObjectUtility.getPackagePath(getClass()) + "QC_5EST_MS12_NoChange_AliveBasalArea_AllSpecies.json"; 
+		MetaModelMetaData metaData1 = MetaModelMetaData.deserializeFromJSONFile(metaDataFile);
+		Assert.assertTrue("Testing if upscaling is set to unknown", metaData1.growth.upscaling.values().iterator().next().equals(MetaModelMetaData.NO_VARIANCE_UPSCALING));
+	}
 
 }
